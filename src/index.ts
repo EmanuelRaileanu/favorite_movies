@@ -26,6 +26,10 @@ app.get('/movies', (req, res) => {
 });
 
 app.post('/movies', (req, res) => {
+    if(!req.body.name){
+        res.status(400).send('Bad request');
+        return;
+    }
     const movie = {
         id: movies.length + 1,
         name: req.body.name
@@ -36,11 +40,10 @@ app.post('/movies', (req, res) => {
 
 app.delete('/movies/:id', (req, res) => {
     const movie = movies.find(m => m.id === parseInt(req.params.id, 10));
-    if(!movie) res.status(404).send('Movie not found');
+    if(!movie){ res.status(404).send('Movie not found'); return; }
     else movies.splice(parseInt(req.params.id, 10) - 1, 1);
-    for(let i = parseInt(req.params.id, 10) - 1; i < movies.length; i++){
+    for(let i = parseInt(req.params.id, 10) - 1; i < movies.length; i++)
         movies[i].id--;
-    }
     res.send('DELETE request received');
 });
 
