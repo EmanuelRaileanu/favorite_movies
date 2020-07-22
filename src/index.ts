@@ -4,6 +4,7 @@ import express from 'express';
 import movie_list from './movies.json';
 
 dotenv.config();
+const movies = movie_list.movies;
 
 const app = express();
 const port = process.env.SERVER_PORT;
@@ -26,11 +27,21 @@ app.get('/movies', (req, res) => {
 
 app.post('/movies', (req, res) => {
     const movie = {
-        id: movie_list.movies.length + 1,
+        id: movies.length + 1,
         name: req.body.name
     };
     movie_list.movies.push(movie);
     res.send('POST request received');
+});
+
+app.delete('/movies/:id', (req, res) => {
+    const movie = movies.find(m => m.id === parseInt(req.params.id, 10));
+    if(!movie) res.status(404).send('Movie not found');
+    else movies.splice(parseInt(req.params.id, 10) - 1, 1);
+    for(let i = parseInt(req.params.id, 10) - 1; i < movies.length; i++){
+        movies[i].id--;
+    }
+    res.send('DELETE request received');
 });
 
 app.listen(port, () => {
