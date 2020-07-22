@@ -17,7 +17,6 @@ dotenv.config();
 
 const app = express();
 const port = process.env.SERVER_PORT;
-
 app.use(express.json());
 
 app.set('views', path.join(__dirname, 'views'));
