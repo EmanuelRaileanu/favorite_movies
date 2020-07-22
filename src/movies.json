@@ -1,0 +1,7 @@
+{
+    "movies": [
+        {"id": 1, "name": "Inception"},
+        {"id": 2, "name": "Lord Of The Rings"},
+        {"id": 3, "name": "Avengers: Infinity War"}
+    ]
+}
