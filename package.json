@@ -33,5 +33,9 @@
     "ts-node": "^8.10.2",
     "tslint": "^6.1.2",
     "typescript": "^3.9.7"
+  },
+  "dependencies": {
+    "knex": "^0.21.2",
+    "mysql2": "^2.1.0"
   }
 }
