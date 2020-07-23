@@ -35,6 +35,7 @@ export const register = (app: express.Application) => {
             title: req.body.title,
             description: req.body.description,
             runtime: req.body.runtime,
+            releaseDate: req.body.releaseDate,
             budget: req.body.budget,
             gross: req.body.gross,
             overallRating: req.body.overallRating
