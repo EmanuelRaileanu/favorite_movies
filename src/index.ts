@@ -3,17 +3,17 @@ import path from 'path';
 import express from 'express';
 import Knex from 'knex';
 
+dotenv.config();
+
 const knex = Knex({
     client: 'mysql2',
     connection: {
-        host: '127.0.0.1',
-        user: 'dev',
-        password: '',
-        database: 'mydb'
+        host: process.env.DB_HOST,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASS,
+        database: process.env.DB_NAME
     }
 });
-
-dotenv.config();
 
 const app = express();
 const port = process.env.SERVER_PORT;
