@@ -1,11 +1,11 @@
 import dotenv from 'dotenv';
 import express from 'express';
 import Knex from 'knex';
-import {config} from '../knexconfig';
+import {config} from '../../knexfile';
 
 dotenv.config();
 
-const knex = Knex(config);
+const knex = Knex(config.development);
 
 export const register = (app: express.Application) => {
 
