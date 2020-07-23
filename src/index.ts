@@ -58,7 +58,7 @@ app.post('/movies', (req, res) => {
 app.delete('/movies/:id', (req, res) => {
     knex('movies').where('id', req.params.id)
         .del()
-        .catch((err) => { console.log( err); throw err });
+        .catch((err) => { res.status(404).send('Not found'); throw err });
     res.send('DELETE request received');
 });
 
