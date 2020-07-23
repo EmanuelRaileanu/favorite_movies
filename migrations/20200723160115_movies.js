@@ -1,7 +1,3 @@
-const onUpdateTrigger = table =>
-    `
-        timestamp not null default now() on update now()
-    `
 
 exports.up = function(knex) {
   return knex.schema.createTable('movie_list', (table) => {
@@ -19,5 +15,16 @@ exports.up = function(knex) {
 };
 
 exports.down = function(knex) {
-  return knex.schema.dropTable('movie_list');
+  return knex.schema.dropTable('movie_list', () => {
+    table.dropColumn('id');
+    table.dropColumn('title');
+    table.dropColumn('description');
+    table.dropColumn('runtime');
+    table.dropColumn('releaseDate');
+    table.dropColumn('budget');
+    table.dropColumn('gross');
+    table.dropColumn('overallRating', 2, 1);
+    table.dropTimestamps('createdAt');
+    table.dropTimestamps('updatedAt');
+  });
 };
