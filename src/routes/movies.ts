@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 import express from 'express';
 import Knex from 'knex';
-import {config} from '../../knexfile';
+import * as config from '../../knexfile.js';
 
 dotenv.config();
 
