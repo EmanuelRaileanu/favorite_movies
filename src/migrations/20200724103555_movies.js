@@ -1,5 +1,6 @@
 
 exports.up = function(knex) {
+
     return knex.schema.table('movies', table => {
       table.date('releaseDate');
       table.decimal('budget', 15, 2).alter();
