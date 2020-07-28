@@ -1,44 +1,39 @@
 const dotenv = require('dotenv');
 dotenv.config();
 const config = require('../../knexfile');
+
 const Knex = require('knex')(config.development);
 
-function checkUniqueTitle(movie){
-  return Knex.from('movies').select('*')
-        .then(function(movies){
-            for(let i = 0; i < movies.length; i++){
-              if(movies[i].title === movie.title)
-                return false;
-              }
-            return true;
-        }).catch((err) => { console.log( err); throw err });
+async function checkUniqueTitle(movie){
+  const movieTitle = await Knex.from('movies').where({title: movie.title}).first();
+  if(!movieTitle){
+    return true;
+  }
+  return false;
 }
 
-function checkUniqueName(company){
-  return Knex.from('production_companies').select('*')
-        .then(function(companies){
-            for(let i = 0; i < companies.length; i++){
-              if(companies[i].title === company.title)
-                return false;
-              }
-            return true;
-        }).catch((err) => { console.log( err); throw err });
+async function checkUniqueName(company){
+  const companyName = await Knex.from('production_companies').where({name: company.name}).first();
+  if(!companyName){
+    return true;
+  }
+  return false;
 }
 
 exports.seed = async function(knex) {
 
-  const _seed = [
-    { name: 'Marvel Studios' },
-    { name: 'summit Entertainment' },
-    { name: 'Other' }
-  ];
-  for(let i =0; i < _seed.length; i++){
-    if(await checkUniqueName(_seed[i]) === false){
-      _seed.splice(i, 1);
-      i--;
+  const productionCompanies = {
+    marvel: { name: 'Marvel Studios'},
+    summit: { name: 'Summit Entertainment'},
+    other: { name: 'Other'}
+  };
+
+  for(let i =0; i < Object.keys(productionCompanies).length; i++){
+    if(await checkUniqueName(productionCompanies[Object.keys(productionCompanies)[i]]) === true){
+      let id = await Knex('production_companies').insert(productionCompanies[Object.keys(productionCompanies)[i]]);
+      productionCompanies[Object.keys(productionCompanies)[i]]['id'] = id;
     }
   }
-  knex('production_companies').insert(_seed);
 
   const seed = [
     { 
@@ -49,7 +44,7 @@ exports.seed = async function(knex) {
       budget: 160000000.00,
       gross: 828322032.00,
       overallRating: 8.8,
-      ProductionCompanyId: 3,
+      ProductionCompanyId: productionCompanies['other'].id
     },
     {
       title: 'John Wick',
@@ -59,7 +54,7 @@ exports.seed = async function(knex) {
       budget: 40000000.00,
       gross: 86013056.00,
       overallRating: 7.4,
-      ProductionCompanyId: 2,
+      ProductionCompanyId: productionCompanies['summit'].id
     },
     {
       title: 'The Lord of the Rings: The Fellowship of the Ring',
@@ -69,9 +64,9 @@ exports.seed = async function(knex) {
       budget: 93000000.00,
       gross: 883726270.00,
       overallRating: 8.8,
-      ProductionCompanyId: 3
+      ProductionCompanyId: productionCompanies['other'].id
     },
-     {
+    {
       title: 'Avengers: Infinity War',
       description: 'The Avengers and their allies must be willing to sacrifice all in an attempt to defeat the powerful Thanos before his blitz of devastation and ruin puts an end to the universe.',
       runtime: '149min',
@@ -79,7 +74,7 @@ exports.seed = async function(knex) {
       budget: 316000000.00,
       gross: 2048359754.00,
       overallRating: 8.8,
-      ProductionCompanyId: 1
+      ProductionCompanyId: productionCompanies['marvel'].id
     },
     {
       title: 'The Dark Knight',
@@ -89,7 +84,7 @@ exports.seed = async function(knex) {
       budget: 180000000.00,
       gross: 1003045358.00,
       overallRating: 9.0,
-      ProductionCompanyId: 3
+      ProductionCompanyId: productionCompanies['other'].id
     },
     {
       title: 'The Hobbit: An Unexpected Journey',
@@ -99,7 +94,7 @@ exports.seed = async function(knex) {
       budget: 180000000.00,
       gross: 1017003568.00,
       overallRating: 7.8,
-      ProductionCompanyId: 3
+      ProductionCompanyId: productionCompanies['other'].id
     },
     {
       title: 'Thor: Ragnarok',
@@ -109,7 +104,7 @@ exports.seed = async function(knex) {
       budget: 180000000.00,
       gross: 853977126.00,
       overallRating: 7.9,
-      ProductionCompanyId: 1
+      ProductionCompanyId: productionCompanies['marvel'].id
     },
     {
       title: 'Interstellar',
@@ -119,7 +114,7 @@ exports.seed = async function(knex) {
       budget: 165000000.00,
       gross: 677463813.00,
       overallRating: 8.6,
-      ProductionCompanyId: 3
+      ProductionCompanyId: productionCompanies['other'].id
     },
     {
       title: 'The Hangover',
@@ -129,7 +124,7 @@ exports.seed = async function(knex) {
       budget: 35000000.00,
       gross: 468812793.00,
       overallRating: 7.7,
-      ProductionCompanyId: 3
+      ProductionCompanyId: productionCompanies['other'].id
     },
     {
       title: 'Anchorman: The Legend of Ron Burgundy',
@@ -139,14 +134,13 @@ exports.seed = async function(knex) {
       budget: 26000000.00,
       gross: 90649730.00,
       overallRating: 7.2,
-      ProductionCompanyId: 3
+      ProductionCompanyId: productionCompanies['other'].id
     }
   ];
+
   for(let i =0; i < seed.length; i++){
-    if(await checkUniqueTitle(seed[i]) === false){
-      seed.splice(i, 1);
-      i--;
+    if(await checkUniqueTitle(seed[i]) === true){
+      await Knex('movies').insert(seed[i]);
     }
   }
-  return knex('production_companies').insert(_seed).then(() => knex('movies').insert(seed));
 };
