@@ -3,6 +3,7 @@ import express from 'express';
 import * as root from './routes/root';
 import * as movies from './routes/movies';
 import * as err from './routes/err';
+import * as productionCompanies from './routes/productionCompanies';
 
 dotenv.config();
 
@@ -14,6 +15,8 @@ app.use(express.json());
 root.register(app);
 
 movies.register(app);
+
+productionCompanies.register(app);
 
 err.register(app);
 

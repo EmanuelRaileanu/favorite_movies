@@ -1,12 +1,9 @@
 import express from 'express';
+import * as controller from '../controllers/root_controller'
 
 export const register = (app: express.Application) => {
     app.get('/', (req, res) =>{
-        const response = {
-            name: "Favorite Movies",
-            version: process.env.npm_package_version
-        };
-        res.send(response);
+        controller.getRoot(req, res);
     });
 };
 
