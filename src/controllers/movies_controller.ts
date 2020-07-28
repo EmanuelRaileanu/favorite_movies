@@ -8,11 +8,10 @@ dotenv.config();
 const knex = Knex(config.development);
 
 export const getMovies = async (req: express.Request, res: express.Response) => {
-    const page = parseInt(String(req.query.page), 10);
-    const pageSize = parseInt(String(req.query.pageSize), 10);
     const length = parseInt(String((await knex('movies').count('id'))[0]['count(`id`)']), 10);
+    const page = parseInt(String(req.query.page), 10) || 1;
+    const pageSize = parseInt(String(req.query.pageSize), 10) || length;
     const pageCount = Math.ceil(length / pageSize);
-
     const rows = await knex.from('movies').select("*").offset((page - 1) * pageSize).limit(pageSize);
 
     if(page > pageCount){
