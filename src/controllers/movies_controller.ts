@@ -1,23 +1,31 @@
-import dotenv from 'dotenv';
-import Knex from 'knex';
-import * as config from '../../knexfile.js';
+import { knex } from '../utilities/knexconfig';
 import express from 'express';
-
-dotenv.config();
-
-const knex = Knex(config.development);
+import { paginate, getLength } from '../utilities/paginate';
 
 export const getMovies = async (req: express.Request, res: express.Response) => {
-    const rows = await knex.from('movies').select("*");
-    res.send(rows);
+    const reg = new RegExp('^[0-9]$');
+    const length = await getLength('movies');
+    const page = parseInt(reg.test(String(req.query.page))? String(req.query.page) : '1', 10) || 1;
+    const pageSize = parseInt(reg.test(String(req.query.pageSize))? String(req.query.pageSize) : String(length), 10) || length;
+
+    const result = await paginate('movies', page, pageSize, length);
+
+    if(parseInt(String(result), 10) === 404){
+        res.status(404).send('Page not found');
+        return;
+    }
+
+    res.send(result);
 };
 
 export const getMovieById = async (req: express.Request, res: express.Response) => {
-    const rows = await knex.from('movies').select("*");
-    const movie = rows.find(m => m.id === parseInt(req.params.id, 10));
-    if(!movie) res.status(404).send('Movie not found');
-    res.send(movie);
+    const movie = (await knex('movies').where('id', req.params.id))[0];
 
+    if(!movie){
+        res.status(404).send('Movie not found');
+    }
+
+    res.send(movie);
 };
 
 export const postMovie = async (req: express.Request, res: express.Response) => {
