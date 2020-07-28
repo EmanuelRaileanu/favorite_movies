@@ -3,7 +3,7 @@ import express from 'express';
 import { paginate, getLength } from '../utilities/paginate';
 
 export const getProductionCompanies = async (req: express.Request, res: express.Response) => {
-    const reg = new RegExp('^[0-9]$');
+    const reg = new RegExp('^[0-9]+');
     const length = await getLength('production_companies');
     const page = parseInt(reg.test(String(req.query.page))? String(req.query.page) : '1', 10) || 1;
     const pageSize = parseInt(reg.test(String(req.query.pageSize))? String(req.query.pageSize) : String(length), 10) || length;
