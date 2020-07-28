@@ -9,15 +9,30 @@ const knex = Knex(config.development);
 
 export const getMovies = async (req: express.Request, res: express.Response) => {
     const rows = await knex.from('movies').select("*");
-    res.send(rows);
+
+    const page = parseInt(String(req.query.page), 10);
+    const pageSize = parseInt(String(req.query.pageSize), 10);
+    const pageCount = Math.ceil(rows.length / pageSize);
+
+    if(page > pageCount){
+        res.status(404).send('Page not found');
+        return;
+    }
+
+    const obj = {
+        page,
+        pageSize,
+        pageCount
+    };
+
+    res.send([obj].concat(rows.slice((page - 1) * pageSize, pageSize * page)));
 };
 
 export const getMovieById = async (req: express.Request, res: express.Response) => {
-    const rows = await knex.from('movies').select("*");
-    const movie = rows.find(m => m.id === parseInt(req.params.id, 10));
-    if(!movie) res.status(404).send('Movie not found');
+    const movie = (await knex('movies').where('id', req.params.id))[0];
+    if(!movie)
+        res.status(404).send('Movie not found');
     res.send(movie);
-
 };
 
 export const postMovie = async (req: express.Request, res: express.Response) => {
