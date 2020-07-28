@@ -1,18 +1,14 @@
-import dotenv from 'dotenv';
-import Knex from 'knex';
-import * as config from '../../knexfile.js';
+import { knex } from '../utilities/knexconfig';
 import express from 'express';
-import { paginate } from '../utilities/paginate';
-
-dotenv.config();
-
-const knex = Knex(config.development);
+import { paginate, getLength } from '../utilities/paginate';
 
 export const getMovies = async (req: express.Request, res: express.Response) => {
     const reg = new RegExp('^[0-9]$');
+    const length = await getLength('movies');
     const page = parseInt(reg.test(String(req.query.page))? String(req.query.page) : '1', 10) || 1;
     const pageSize = parseInt(reg.test(String(req.query.pageSize))? String(req.query.pageSize) : String(length), 10) || length;
-    const result = await paginate('movies', page, pageSize)
+
+    const result = await paginate('movies', page, pageSize, length);
 
     if(parseInt(String(result), 10) === 404){
         res.status(404).send('Page not found');
