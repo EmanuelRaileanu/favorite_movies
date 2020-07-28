@@ -9,11 +9,12 @@ dotenv.config();
 const knex = Knex(config.development);
 
 export const getProductionCompanies = async (req: express.Request, res: express.Response) => {
-    const rows = await knex.from('production_companies').select('*');
-
     const page = parseInt(String(req.query.page), 10);
     const pageSize = parseInt(String(req.query.pageSize), 10);
-    const pageCount = Math.ceil(rows.length / pageSize);
+    const length = parseInt(String((await knex('production_companies').count('id'))[0]['count(`id`)']), 10);
+    const pageCount = Math.ceil(length / pageSize);
+
+    const rows = await knex.from('production_companies').select("*").offset((page - 1) * pageSize).limit(pageSize);
 
     if(page > pageCount){
         res.status(404).send('Page not found');
@@ -26,7 +27,7 @@ export const getProductionCompanies = async (req: express.Request, res: express.
         pageCount
     };
 
-    res.send([obj].concat(rows.slice((page - 1) * pageSize, pageSize * page)));
+    res.send([obj].concat(rows));
 };
 
 export const getProductionCompanyById = async (req: express.Request, res: express.Response) => {
