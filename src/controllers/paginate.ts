@@ -15,7 +15,7 @@ export const paginate = async (req: express.Request, res: express.Response, tabl
     const pageCount = Math.ceil(length / pageSize);
     const rows = await knex.from(table).select("*").offset((page - 1) * pageSize).limit(pageSize);
 
-    if(page > pageCount){
+    if(page > pageCount || page <= 0){
         res.status(404).send('Page not found');
         return;
     }
