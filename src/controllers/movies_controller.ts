@@ -10,7 +10,7 @@ export const getMovies = async (req: express.Request, res: express.Response) => 
 
     const result = await paginate('movies', page, pageSize, length);
 
-    if(parseInt(String(result), 10) === 404){
+    if(result.results === []){
         res.status(404).send('Page not found');
         return;
     }
@@ -19,10 +19,11 @@ export const getMovies = async (req: express.Request, res: express.Response) => 
 };
 
 export const getMovieById = async (req: express.Request, res: express.Response) => {
-    const movie = (await knex.from('movies')
+    const movie = await knex.from('movies')
                     .join('production_companies', 'movies.ProductionCompanyId', '=', 'production_companies.id')
                     .select('movies.*', 'production_companies.name as ProductionCompanyName')
-                    .where('movies.id', req.params.id))[0];
+                    .where('movies.id', req.params.id)
+                    .first();
 
     if(!movie){
         res.status(404).send('Movie not found');

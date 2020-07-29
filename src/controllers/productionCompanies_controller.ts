@@ -10,7 +10,7 @@ export const getProductionCompanies = async (req: express.Request, res: express.
 
     const result = await paginate('production_companies', page, pageSize, length);
 
-    if(parseInt(String(result), 10) === 404){
+    if(result.results === []){
         res.status(404).send('Page not found');
         return;
     }
@@ -19,7 +19,7 @@ export const getProductionCompanies = async (req: express.Request, res: express.
 };
 
 export const getProductionCompanyById = async (req: express.Request, res: express.Response) => {
-    const company = (await knex('production_companies').where('id', req.params.id))[0];
+    const company = await knex('production_companies').where('id', req.params.id).first();
 
     if(!company){
          res.status(404).send('Production company not found');
