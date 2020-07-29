@@ -38,7 +38,7 @@ export const getMovieById = async (req: express.Request, res: express.Response) 
     const categories = await knex.from('movies_movie_categories')
                         .join('movie_categories', 'movies_movie_categories.categoryId', '=', 'movie_categories.id')
                         .select('movies_movie_categories.movieId', 'movies_movie_categories.categoryId as id', 'movie_categories.category as name')
-                        .whereIn('movies_movie_categories.movieId', [movie.id]);
+                        .where('movies_movie_categories.movieId', movie.id);
 
     categories.forEach(category => delete category.movieId);
     movie.categories = categories;
