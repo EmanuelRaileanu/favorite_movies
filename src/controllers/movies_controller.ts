@@ -19,7 +19,10 @@ export const getMovies = async (req: express.Request, res: express.Response) => 
 };
 
 export const getMovieById = async (req: express.Request, res: express.Response) => {
-    const movie = (await knex('movies').where('id', req.params.id))[0];
+    const movie = (await knex.from('movies')
+                    .join('production_companies', 'movies.ProductionCompanyId', '=', 'production_companies.id')
+                    .select('movies.*', 'production_companies.name as ProductionCompanyName')
+                    .where('movies.id', req.params.id))[0];
 
     if(!movie){
         res.status(404).send('Movie not found');
