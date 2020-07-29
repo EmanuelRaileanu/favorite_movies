@@ -10,7 +10,7 @@ export const getProductionCompanies = async (req: express.Request, res: express.
 
     const result = await paginate('production_companies', page, pageSize, length);
 
-    if(result.results === []){
+    if(!result.results.length){
         res.status(404).send('Page not found');
         return;
     }

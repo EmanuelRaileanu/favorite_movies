@@ -10,12 +10,17 @@ export const getMovies = async (req: express.Request, res: express.Response) => 
 
     const result = await paginate('movies', page, pageSize, length);
 
-    if(result.results === []){
+    if(!result.results.length){
         res.status(404).send('Page not found');
         return;
     }
 
     res.send(result);
+};
+
+export const getMovieCategories = async (req: express.Request, res: express.Response) => {
+    const rows = await knex.from('movie_categories').select('*');
+    res.send(rows);
 };
 
 export const getMovieById = async (req: express.Request, res: express.Response) => {
@@ -27,7 +32,18 @@ export const getMovieById = async (req: express.Request, res: express.Response) 
 
     if(!movie){
         res.status(404).send('Movie not found');
+        return;
     }
+
+    const categories = await knex.from('movies_movie_categories')
+                        .join('movie_categories', 'movies_movie_categories.categoryId', '=', 'movie_categories.id')
+                        .select('movies_movie_categories.movieId', 'movies_movie_categories.categoryId as id', 'movie_categories.category as name');
+
+    let filteredCategoryList;
+    filteredCategoryList = categories.filter(c => c.movieId === movie.id);
+    filteredCategoryList.forEach(category => delete category.movieId);
+    movie.categories = filteredCategoryList;
+
 
     res.send(movie);
 };
@@ -55,6 +71,7 @@ export const postMovie = async (req: express.Request, res: express.Response) => 
 };
 
 export const deleteMovie = async (req: express.Request, res: express.Response) => {
+    await knex('movies_movie_categories').where('movieId', req.params.id).del();
     await knex('movies').where('id', req.params.id).del();
     res.send('DELETE request received');
 };

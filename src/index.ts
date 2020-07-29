@@ -10,6 +10,8 @@ dotenv.config();
 const app = express();
 const port = process.env.SERVER_PORT;
 
+app.use(express.json());
+
 root.register(app);
 
 movies.register(app);

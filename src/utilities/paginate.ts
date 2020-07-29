@@ -10,12 +10,23 @@ export const getLength = async (table: string) => parseInt(String((await knex(ta
 
 export const paginate = async (table: string, page: number, pageSize: number, length: number) => {
     const pageCount = Math.ceil(length / pageSize);
-    let rows;
+    let rows: any[];
     if(table === 'movies'){
         rows = await knex.from(table).join('production_companies', 'movies.ProductionCompanyId', '=', 'production_companies.id')
                             .select('movies.*', 'production_companies.name as ProductionCompanyName')
                             .offset((page - 1) * pageSize)
-                            .limit(pageSize)
+                            .limit(pageSize);
+
+        const categories = await knex.from('movies_movie_categories')
+                        .join('movie_categories', 'movies_movie_categories.categoryId', '=', 'movie_categories.id')
+                        .select('movies_movie_categories.movieId', 'movies_movie_categories.categoryId as id', 'movie_categories.category as name');
+
+        let filteredCategoryList;
+        for(const row of rows){
+            filteredCategoryList = categories.filter(c => c.movieId === row.id);
+            filteredCategoryList.forEach(category => delete category.movieId);
+            row.categories = filteredCategoryList;
+        }
     }
     else{
         rows = await knex.from(table).select('*')
@@ -30,8 +41,8 @@ export const paginate = async (table: string, page: number, pageSize: number, le
     };
 
     return {
-        pagination,
-        results: rows
+        results: rows,
+        pagination
     };
 };
 
