@@ -65,7 +65,17 @@ export const postMovie = async (req: express.Request, res: express.Response) => 
         ProductionCompanyId: req.body.ProductionCompanyId
     };
 
-    await knex('movies').insert(movie);
+    const id = await knex('movies').insert(movie);
+
+    const categories = req.body.categories;
+
+    for(const category of categories){
+        const entry = {
+            movieId: id,
+            categoryId: category.id
+        };
+        await knex('movies_movie_categories').insert(entry);
+    }
 
     res.send('POST request received');
 };
