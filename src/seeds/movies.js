@@ -13,11 +13,43 @@ async function checkUniqueTitle(movie){
 }
 
 async function checkUniqueName(company){
-  const companyName = await Knex.from('production_companies').where({name: company.name}).first();
+  const companyName = await Knex.from('production_companies').where({ name: company.name }).first();
   if(!companyName){
     return true;
   }
   return false;
+}
+
+async function checkUniqueCategory(category){
+  const entry = await Knex.from('movie_categories').where({ category: category }).first();
+  if(!entry){
+    return true;
+  }
+  return false;
+}
+
+async function checkUniqueMovieCategoryEntry(entry){
+  const find = await Knex.from('movies_movie_categories').where({ movieId: entry.movieId }).where({ categoryId: entry.categoryId}).first();
+  if(!find){
+    return true;
+  }
+  return false;
+}
+
+async function checkForNoCategory(id){
+  const find = await Knex.from('movies_movie_categories').where({ movieId: id }).first();
+  if(!find){
+    return true;
+  }
+  return false;
+}
+
+async function getMovieId(title){
+  return (await Knex.from('movies').where({title: title}).first()).id;
+}
+
+async function getCategoryId(category){
+  return (await Knex.from('movie_categories').where({category: category}).first()).id;
 }
 
 exports.seed = async function(knex) {
@@ -29,7 +61,7 @@ exports.seed = async function(knex) {
   };
 
   for(let i =0; i < Object.keys(productionCompanies).length; i++){
-    if(await checkUniqueName(productionCompanies[Object.keys(productionCompanies)[i]]) === true){
+    if(await checkUniqueName(productionCompanies[Object.keys(productionCompanies)[i]])){
       let id = await Knex('production_companies').insert(productionCompanies[Object.keys(productionCompanies)[i]]);
       productionCompanies[Object.keys(productionCompanies)[i]].id = id;
     }
@@ -138,9 +170,83 @@ exports.seed = async function(knex) {
     }
   ];
 
-  for(let i =0; i < seed.length; i++){
-    if(await checkUniqueTitle(seed[i]) === true){
+  for(let i = 0; i < seed.length; i++){
+    if(await checkUniqueTitle(seed[i])){
       await Knex('movies').insert(seed[i]);
     }
   }
+
+  const categorySeed = [
+    {
+      category: 'Action'
+    },
+    {
+      category: 'Comedy'
+    },
+    {
+      category: 'Drama'
+    },
+    {
+      category: 'Fantasy'
+    },
+    {
+      category: 'Horror'
+    },
+    {
+      category: 'Mystery'
+    },
+    {
+      category: 'Romance'
+    },
+    {
+      category: 'Thriller'
+    }
+  ];
+
+  for(let i = 0; i < categorySeed.length; i++){
+    if(await checkUniqueCategory(categorySeed[i].category)){
+      await Knex('movie_categories').insert(categorySeed[i]);
+    }
+  }
+
+  const movieCategorySeed = [
+    {
+      movieId: await getMovieId('Inception'),
+      categoryId: await getCategoryId('Fantasy')
+    },
+    {
+      movieId: await getMovieId('Inception'),
+      categoryId: await getCategoryId('Action')
+    },
+    {
+      movieId: await getMovieId('Thor: Ragnarok'),
+      categoryId: await getCategoryId('Action')
+    }
+  ];
+
+  for(let i = 0; i < movieCategorySeed.length; i++){
+    if(await checkUniqueMovieCategoryEntry(movieCategorySeed[i])){
+      await Knex('movies_movie_categories').insert(movieCategorySeed[i]);
+    }
+  }
+
+  for(let i = 0; i < seed.length; i++){
+    const id = await getMovieId(seed[i].title);
+    if(await checkForNoCategory(id)){
+      await Knex('movies_movie_categories')
+        .insert({
+          movieId: id,
+          categoryId: Math.floor(Math.random() * categorySeed.length) + 1
+        });
+      let entry;
+      do{
+        entry = {
+          movieId: id,
+          categoryId: Math.floor(Math.random() * categorySeed.length) + 1
+        };
+      }while(!await checkUniqueMovieCategoryEntry(entry));
+      await Knex('movies_movie_categories').insert(entry);
+    }
+  }
+
 };

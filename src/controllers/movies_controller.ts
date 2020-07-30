@@ -10,12 +10,17 @@ export const getMovies = async (req: express.Request, res: express.Response) => 
 
     const result = await paginate('movies', page, pageSize, length);
 
-    if(result.results === []){
+    if(!result.results.length){
         res.status(404).send('Page not found');
         return;
     }
 
     res.send(result);
+};
+
+export const getMovieCategories = async (req: express.Request, res: express.Response) => {
+    const rows = await knex.from('movie_categories').select('*');
+    res.send(rows);
 };
 
 export const getMovieById = async (req: express.Request, res: express.Response) => {
@@ -27,10 +32,31 @@ export const getMovieById = async (req: express.Request, res: express.Response) 
 
     if(!movie){
         res.status(404).send('Movie not found');
+        return;
     }
+
+    const categories = await knex.from('movies_movie_categories')
+                        .join('movie_categories', 'movies_movie_categories.categoryId', '=', 'movie_categories.id')
+                        .select('movies_movie_categories.categoryId as id', 'movie_categories.category as name')
+                        .where('movies_movie_categories.movieId', movie.id);
+
+    movie.categories = categories;
 
     res.send(movie);
 };
+
+interface CategoryTemplate{
+    id: number,
+    name: string
+};
+
+async function checkIfCategoryExists(category: CategoryTemplate){
+    const find = await knex.from('movie_categories').where({ id: category.id }).first();
+    if(!find){
+        return false;
+    }
+    return true;
+}
 
 export const postMovie = async (req: express.Request, res: express.Response) => {
     if(!req.body.title){
@@ -49,13 +75,31 @@ export const postMovie = async (req: express.Request, res: express.Response) => 
         ProductionCompanyId: req.body.ProductionCompanyId
     };
 
-    await knex('movies').insert(movie);
+    const id = await knex('movies').insert(movie);
+
+    if(req.body.hasOwnProperty('categories')){
+        const categories = req.body.categories;
+
+        for(const category of categories){
+            if(await checkIfCategoryExists(category)){
+                const entry = {
+                    movieId: id,
+                    categoryId: category.id
+                };
+                await knex('movies_movie_categories').insert(entry);
+            }
+        }
+    }
 
     res.send('POST request received');
 };
 
 export const deleteMovie = async (req: express.Request, res: express.Response) => {
-    await knex('movies').where('id', req.params.id).del();
+    await knex.transaction(async  trx => {
+        await knex('movies_movie_categories').transacting(trx).where('movieId', req.params.id).del();
+        await knex('movies').transacting(trx).where('id', req.params.id).del();
+        await trx.commit();
+    });
     res.send('DELETE request received');
 };
 
