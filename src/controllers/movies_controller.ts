@@ -37,10 +37,9 @@ export const getMovieById = async (req: express.Request, res: express.Response) 
 
     const categories = await knex.from('movies_movie_categories')
                         .join('movie_categories', 'movies_movie_categories.categoryId', '=', 'movie_categories.id')
-                        .select('movies_movie_categories.movieId', 'movies_movie_categories.categoryId as id', 'movie_categories.category as name')
+                        .select('movies_movie_categories.categoryId as id', 'movie_categories.category as name')
                         .where('movies_movie_categories.movieId', movie.id);
 
-    categories.forEach(category => delete category.movieId);
     movie.categories = categories;
 
     res.send(movie);
@@ -98,9 +97,9 @@ export const postMovie = async (req: express.Request, res: express.Response) => 
 export const deleteMovie = async (req: express.Request, res: express.Response) => {
     await knex.transaction(async  trx => {
         await knex('movies_movie_categories').transacting(trx).where('movieId', req.params.id).del();
+        await knex('movies').transacting(trx).where('id', req.params.id).del();
         await trx.commit();
     });
-    await knex('movies').where('id', req.params.id).del();
     res.send('DELETE request received');
 };
 
