@@ -14,13 +14,14 @@ export const getMovies = async (req: express.Request, res: express.Response) => 
         res.status(404).send('Page not found');
         return;
     }
-
-    res.send(result);
+    res.setHeader("Content-Type", "application/json");
+    res.json(result);
 };
 
 export const getMovieCategories = async (req: express.Request, res: express.Response) => {
     const rows = await knex.from('movie_categories').select('*');
-    res.send(rows);
+    res.setHeader("Content-Type", "application/json");
+    res.json(rows);
 };
 
 export const getMovieById = async (req: express.Request, res: express.Response) => {
@@ -39,10 +40,10 @@ export const getMovieById = async (req: express.Request, res: express.Response) 
                         .join('movie_categories', 'movies_movie_categories.categoryId', '=', 'movie_categories.id')
                         .select('movies_movie_categories.categoryId as id', 'movie_categories.category as name')
                         .where('movies_movie_categories.movieId', movie.id);
-
+    // throw new Error('31337');
     movie.categories = categories;
-
-    res.send(movie);
+    res.setHeader("Content-Type", "application/json");
+    res.json(movie);
 };
 
 interface CategoryTemplate{
@@ -92,8 +93,6 @@ export const postMovie = async (req: express.Request, res: express.Response) => 
                 }
             }
         }
-
-        await trx.commit();
     });
     res.send('POST request received');
 };
@@ -127,8 +126,6 @@ export const updateMovie = async (req: express.Request, res: express.Response) =
         }
 
         await knex('movies').transacting(trx).where('id', req.params.id).update(req.body);
-
-        await trx.commit();
     });
     res.send('PUT request received');
 };
@@ -137,7 +134,6 @@ export const deleteMovie = async (req: express.Request, res: express.Response) =
     await knex.transaction(async trx => {
         await knex('movies_movie_categories').transacting(trx).where('movieId', req.params.id).del();
         await knex('movies').transacting(trx).where('id', req.params.id).del();
-        await trx.commit();
     });
     res.send('DELETE request received');
 };
