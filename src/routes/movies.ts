@@ -10,5 +10,7 @@ export const register = (app: express.Application) => {
 
     app.get('/movies/:id', controller.getMovieById);
 
+    app.put('/movies/:id', controller.updateMovie);
+
     app.delete('/movies/:id', controller.deleteMovie);
 };
