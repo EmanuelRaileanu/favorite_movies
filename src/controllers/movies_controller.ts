@@ -73,15 +73,17 @@ export const postMovie = async (req: express.Request, res: express.Response) => 
         ProductionCompanyId: req.body.ProductionCompanyId
     };
 
-    await knex.transaction(async trx => {
+    const newCategories: any[] = [];
+    let id;
 
-        const id = await knex('movies').transacting(trx).insert(movie);
+    await knex.transaction(async trx => {
+        id = await knex('movies').transacting(trx).insert(movie);
         movie.id = id;
         if(req.body.hasOwnProperty('categories')){
             const categories = req.body.categories;
             for(const category of categories){
                 if(await checkIfCategoryExists(category)){
-                    movie.categories = category;
+                    newCategories.push(category);
                     const entry = {
                         movieId: id,
                         categoryId: category.id
@@ -91,7 +93,10 @@ export const postMovie = async (req: express.Request, res: express.Response) => 
             }
         }
     });
-    res.send(movie);
+    const newEntry = await knex.from('movies').select('*').where('id', id).first();
+    newEntry.categories = newCategories;
+
+    res.send(newEntry);
 };
 
 async function checkIfMovieExists(id: number){
@@ -127,8 +132,8 @@ export const updateMovie = async (req: express.Request, res: express.Response) =
 
         await knex('movies').transacting(trx).where('id', req.params.id).update(req.body);
     });
-    const updatedMovie = await knex.from('movies').select('*').where('id', req.params.id);
-    updatedMovie.push(finalCategories);
+    const updatedMovie = await knex.from('movies').select('*').where('id', req.params.id).first();
+    updatedMovie.categories = finalCategories;
     res.send(updatedMovie);
 };
 
