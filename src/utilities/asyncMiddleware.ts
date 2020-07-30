@@ -5,7 +5,6 @@ export const asyncMiddleware = (fn: any) =>
     try {
         await Promise.resolve(fn(req, res));
     }catch(err){
-        console.log(typeof(err));
         res.status(500).json({
             status: err.toString()
         });
