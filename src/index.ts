@@ -4,6 +4,7 @@ import * as root from './routes/root';
 import * as movies from './routes/movies';
 import * as err from './routes/err';
 import * as productionCompanies from './routes/productionCompanies';
+import * as bodyParser from 'body-parser';
 
 dotenv.config();
 
@@ -11,6 +12,7 @@ const app = express();
 const port = process.env.SERVER_PORT;
 
 app.use(express.json());
+app.use(bodyParser.json());
 
 root.register(app);
 
