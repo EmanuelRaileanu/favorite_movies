@@ -14,13 +14,11 @@ export const getMovies = async (req: express.Request, res: express.Response) => 
         res.status(404).send('Page not found');
         return;
     }
-    res.setHeader("Content-Type", "application/json");
     res.json(result);
 };
 
 export const getMovieCategories = async (req: express.Request, res: express.Response) => {
     const rows = await knex.from('movie_categories').select('*');
-    res.setHeader("Content-Type", "application/json");
     res.json(rows);
 };
 
@@ -42,7 +40,6 @@ export const getMovieById = async (req: express.Request, res: express.Response) 
                         .where('movies_movie_categories.movieId', movie.id);
     // throw new Error('31337');
     movie.categories = categories;
-    res.setHeader("Content-Type", "application/json");
     res.json(movie);
 };
 
@@ -65,7 +62,7 @@ export const postMovie = async (req: express.Request, res: express.Response) => 
         return;
     }
 
-    const movie = {
+    const movie: any = {
         title: req.body.title,
         description: req.body.description,
         runtime: req.body.runtime,
@@ -79,12 +76,12 @@ export const postMovie = async (req: express.Request, res: express.Response) => 
     await knex.transaction(async trx => {
 
         const id = await knex('movies').transacting(trx).insert(movie);
-
+        movie.id = id;
         if(req.body.hasOwnProperty('categories')){
             const categories = req.body.categories;
-
             for(const category of categories){
                 if(await checkIfCategoryExists(category)){
+                    movie.categories = category;
                     const entry = {
                         movieId: id,
                         categoryId: category.id
@@ -94,11 +91,11 @@ export const postMovie = async (req: express.Request, res: express.Response) => 
             }
         }
     });
-    res.send('POST request received');
+    res.send(movie);
 };
 
 async function checkIfMovieExists(id: number){
-    const find = await knex.from('movie_categories').where({ id }).first();
+    const find = await knex.from('movies').where({ id }).first();
     if(!find){
         return false;
     }
@@ -110,24 +107,29 @@ export const updateMovie = async (req: express.Request, res: express.Response) =
         res.send(`Canot update movie with id ${req.params.id} because it does not exist in the database`);
         return;
     }
-
+    const finalCategories: any[] = [];
     await knex.transaction(async trx => {
         if(req.body.hasOwnProperty('categories')){
             const updatedCategories = req.body.categories;
             await knex('movies_movie_categories').transacting(trx).where('movieId', req.params.id).del();
             for(const updatedCategory of updatedCategories){
-                const newCategory = {
-                    movieId: req.params.id,
-                    categoryId: updatedCategory.id
-                };
-                await knex('movies_movie_categories').transacting(trx).insert(newCategory);
+                if(await checkIfCategoryExists(updatedCategory)){
+                    finalCategories.push(updatedCategory);
+                    const newCategory = {
+                        movieId: req.params.id,
+                        categoryId: updatedCategory.id
+                    };
+                    await knex('movies_movie_categories').transacting(trx).insert(newCategory);
+                }
             }
             delete req.body.categories;
         }
 
         await knex('movies').transacting(trx).where('id', req.params.id).update(req.body);
     });
-    res.send('PUT request received');
+    const updatedMovie = await knex.from('movies').select('*').where('id', req.params.id);
+    updatedMovie.push(finalCategories);
+    res.send(updatedMovie);
 };
 
 export const deleteMovie = async (req: express.Request, res: express.Response) => {
@@ -135,6 +137,6 @@ export const deleteMovie = async (req: express.Request, res: express.Response) =
         await knex('movies_movie_categories').transacting(trx).where('movieId', req.params.id).del();
         await knex('movies').transacting(trx).where('id', req.params.id).del();
     });
-    res.send('DELETE request received');
+    res.status(204).send();
 };
 
