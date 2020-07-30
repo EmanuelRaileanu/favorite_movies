@@ -30,7 +30,10 @@ export const paginate = async (table: string, page: number, pageSize: number, le
         }
     }
     else{
-        rows = await knex.from(table).select('*')
+        rows = await knex.from(table).select(table.concat('.*'))
+                    .join('movies',  table.concat('.id'), '=', 'movies.ProductionCompanyId')
+                    .groupBy(table.concat('.id'))
+                    .count('movies.ProductionCompanyId as totalMoviesMade')
                     .offset((page - 1) * pageSize)
                     .limit(pageSize);
     }
