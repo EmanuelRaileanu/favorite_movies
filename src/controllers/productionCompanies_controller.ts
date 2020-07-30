@@ -19,7 +19,11 @@ export const getProductionCompanies = async (req: express.Request, res: express.
 };
 
 export const getProductionCompanyById = async (req: express.Request, res: express.Response) => {
-    const company = await knex('production_companies').where('id', req.params.id).first();
+    const company = await knex('production_companies').select('production_companies.*')
+                .join('movies',  'production_companies.id', '=', 'movies.ProductionCompanyId')
+                .groupBy('production_companies.id')
+                .count('movies.ProductionCompanyId as totalMoviesMade')
+                .where('production_companies.id', req.params.id).first();
 
     if(!company){
          res.status(404).send('Production company not found');
