@@ -1,6 +1,7 @@
 import { knex } from '../utilities/knexconfig';
 import express from 'express';
 import { paginate, getLength } from '../utilities/paginate';
+import { ProductionCompanies } from '../entities/production_companies';
 
 export const getProductionCompanies = async (req: express.Request, res: express.Response) => {
     const reg = new RegExp('^[0-9]+');
@@ -24,10 +25,6 @@ export const getProductionCompanyById = async (req: express.Request, res: expres
                 .groupBy('production_companies.id')
                 .count('movies.ProductionCompanyId as totalMoviesMade')
                 .where('production_companies.id', req.params.id).first();
-
-    if(!company){
-         res.status(404).send('Production company not found');
-    }
 
     res.send(company);
 };

@@ -1,6 +1,8 @@
 import { knex } from '../utilities/knexconfig';
 import express from 'express';
 import { paginate, getLength } from '../utilities/paginate';
+import { Movies } from '../entities/movies';
+import { ProductionCompanies } from '../entities/production_companies';
 
 export const getMovies = async (req: express.Request, res: express.Response) => {
     const reg = new RegExp('^[0-9]+');
@@ -14,6 +16,7 @@ export const getMovies = async (req: express.Request, res: express.Response) => 
         res.status(404).send('Page not found');
         return;
     }
+
     res.json(result);
 };
 
@@ -23,16 +26,14 @@ export const getMovieCategories = async (req: express.Request, res: express.Resp
 };
 
 export const getMovieById = async (req: express.Request, res: express.Response) => {
-    const movie = await knex.from('movies')
+    /*const movie = await knex.from('movies')
                     .join('production_companies', 'movies.ProductionCompanyId', '=', 'production_companies.id')
                     .select('movies.*', 'production_companies.name as ProductionCompanyName')
                     .where('movies.id', req.params.id)
-                    .first();
-
-    if(!movie){
-        res.status(404).send('Movie not found');
-        return;
-    }
+                    .first();*/
+    const movie = await new Movies().getMovieById(parseInt(req.params.id, 10));
+    const productionCompany = (await new ProductionCompanies().getProductionCompanyNameById(parseInt(movie.ProductionCompanyId, 10)));
+    movie.ProductionCompanyName = productionCompany;
 
     const categories = await knex.from('movies_movie_categories')
                         .join('movie_categories', 'movies_movie_categories.categoryId', '=', 'movie_categories.id')
