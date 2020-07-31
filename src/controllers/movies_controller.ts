@@ -3,6 +3,8 @@ import express from 'express';
 import { paginate, getLength } from '../utilities/paginate';
 import { Movies } from '../entities/movies';
 import { ProductionCompanies } from '../entities/production_companies';
+import { MovieCategories } from '../entities/movie_categories';
+import { MoviesMovieCategories } from '../entities/movies_movie_categories';
 
 export const getMovies = async (req: express.Request, res: express.Response) => {
     const reg = new RegExp('^[0-9]+');
@@ -32,24 +34,34 @@ export const getMovieById = async (req: express.Request, res: express.Response) 
                     .where('movies.id', req.params.id)
                     .first();*/
     const movie = await new Movies().getMovieById(parseInt(req.params.id, 10));
-    const productionCompany = (await new ProductionCompanies().getProductionCompanyNameById(parseInt(movie.ProductionCompanyId, 10)));
+    const productionCompany = await new ProductionCompanies().getProductionCompanyNameById(parseInt(movie.ProductionCompanyId, 10));
     movie.ProductionCompanyName = productionCompany;
 
-    const categories = await knex.from('movies_movie_categories')
+    /*const categories = await knex.from('movies_movie_categories')
                         .join('movie_categories', 'movies_movie_categories.categoryId', '=', 'movie_categories.id')
                         .select('movies_movie_categories.categoryId as id', 'movie_categories.category as name')
-                        .where('movies_movie_categories.movieId', movie.id);
+                        .where('movies_movie_categories.movieId', movie.id);*/
     // throw new Error('31337');
-    movie.categories = categories;
-    res.json(movie);
+
+    const categories = await new MoviesMovieCategories().getCategoryId(parseInt(movie.id, 10));
+    categories.forEach(async (category: any) => {
+        category.id = category.categoryId;
+        delete category.categoryId;
+        delete category.movieId;
+        category.name = await new MovieCategories().getCategoryNameById(category.id);
+        console.log(category);
+    });
+    
+    setTimeout(() => {
+            movie.categories = categories;
+            res.json(movie);
+            console.log('I am here');
+        }, 10
+    );
 };
 
-interface CategoryTemplate{
-    id: number,
-    name: string
-};
 
-async function checkIfCategoryExists(category: CategoryTemplate){
+async function checkIfCategoryExists(category: any){
     const find = await knex.from('movie_categories').where({ id: category.id }).first();
     if(!find){
         return false;
