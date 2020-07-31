@@ -5,7 +5,7 @@ export class MovieCategories extends bookshelf.Model<MovieCategories>{
         return 'movie_categories';
     }
 
-    async getCategoryNameById(id: number){
-        return (await this.where({id}).fetch()).get('category');
+    static async getCategoryNameById(id: number){
+        return (await this.where<MovieCategories>({id}).fetch()).get('category');
     }
 }

@@ -5,7 +5,7 @@ export class MoviesMovieCategories extends bookshelf.Model<MoviesMovieCategories
         return 'movies_movie_categories';
     }
 
-    async getCategoryId(id: number){
+    static async getCategoryId(id: number){
         return ((await this.fetchAll()).filter((category: any) => category.attributes.movieId === id)).map(obj => obj.attributes);
     }
 }

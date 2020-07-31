@@ -10,7 +10,7 @@ export const getMovies = async (req: express.Request, res: express.Response) => 
     const reg = new RegExp('^[0-9]+');
     const length = await getLength('movies');
     const page = parseInt(reg.test(String(req.query.page))? String(req.query.page) : '1', 10) || 1;
-    const pageSize = parseInt(reg.test(String(req.query.pageSize))? String(req.query.pageSize) : String(length), 10) || length;
+    const pageSize = parseInt(reg.test(String(req.query.pageSize))? String(req.query.pageSize) : '10', 10) || 10;
 
     const result = await paginate('movies', page, pageSize, length);
 
@@ -18,8 +18,10 @@ export const getMovies = async (req: express.Request, res: express.Response) => 
         res.status(404).send('Page not found');
         return;
     }
-
-    res.json(result);
+    console.log(Movies.productionCompanies);
+    setTimeout(() => {      // I don't think I'm supposed to do this
+        res.send(result);
+    }, 100);
 };
 
 export const getMovieCategories = async (req: express.Request, res: express.Response) => {
@@ -33,8 +35,8 @@ export const getMovieById = async (req: express.Request, res: express.Response) 
                     .select('movies.*', 'production_companies.name as ProductionCompanyName')
                     .where('movies.id', req.params.id)
                     .first();*/
-    const movie = await new Movies().getMovieById(parseInt(req.params.id, 10));
-    const productionCompany = await new ProductionCompanies().getProductionCompanyNameById(parseInt(movie.ProductionCompanyId, 10));
+    const movie = await Movies.getMovieById(parseInt(req.params.id, 10));
+    const productionCompany = await ProductionCompanies.getProductionCompanyNameById(parseInt(movie.ProductionCompanyId, 10));
     movie.ProductionCompanyName = productionCompany;
 
     /*const categories = await knex.from('movies_movie_categories')
@@ -43,19 +45,17 @@ export const getMovieById = async (req: express.Request, res: express.Response) 
                         .where('movies_movie_categories.movieId', movie.id);*/
     // throw new Error('31337');
 
-    const categories = await new MoviesMovieCategories().getCategoryId(parseInt(movie.id, 10));
+    const categories = await MoviesMovieCategories.getCategoryId(parseInt(movie.id, 10));
     categories.forEach(async (category: any) => {
         category.id = category.categoryId;
         delete category.categoryId;
         delete category.movieId;
-        category.name = await new MovieCategories().getCategoryNameById(category.id);
-        console.log(category);
+        category.name = await MovieCategories.getCategoryNameById(category.id);
     });
-    
+
     setTimeout(() => {
             movie.categories = categories;
             res.json(movie);
-            console.log('I am here');
         }, 10
     );
 };
