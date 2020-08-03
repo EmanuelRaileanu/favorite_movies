@@ -2,7 +2,6 @@ import dotenv from 'dotenv';
 import Knex from 'knex';
 import * as config from '../../knexfile.js';
 import { Movies } from '../entities/movies';
-import { ProductionCompanies } from '../entities/production_companies';
 import { MovieCategories } from '../entities/movie_categories';
 import { MoviesMovieCategories } from '../entities/movies_movie_categories';
 

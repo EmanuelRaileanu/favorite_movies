@@ -1,6 +1,5 @@
 import { knex } from '../utilities/knexconfig';
 import express from 'express';
-import { paginate, getLength } from '../utilities/paginate';
 import { ProductionCompanies } from '../entities/production_companies';
 
 export const getProductionCompanies = async (req: express.Request, res: express.Response) => {

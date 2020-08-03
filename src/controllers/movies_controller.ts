@@ -2,11 +2,9 @@ import { knex } from '../utilities/knexconfig';
 import express from 'express';
 import { paginate, getLength } from '../utilities/paginate';
 import { Movies } from '../entities/movies';
-import { ProductionCompanies } from '../entities/production_companies';
 import { MovieCategories } from '../entities/movie_categories';
 import { MoviesMovieCategories } from '../entities/movies_movie_categories';
-import { isNull } from 'util';
-import { moveSync } from 'fs-extra';
+
 
 export const getMovies = async (req: express.Request, res: express.Response) => {
     const reg = new RegExp('^[0-9]+');
