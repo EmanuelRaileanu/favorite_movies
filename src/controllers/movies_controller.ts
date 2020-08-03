@@ -35,9 +35,9 @@ export const getMovieById = async (req: express.Request, res: express.Response) 
                     .select('movies.*', 'production_companies.name as ProductionCompanyName')
                     .where('movies.id', req.params.id)
                     .first();*/
-    const movie = await Movies.getMovieById(parseInt(req.params.id, 10));
+    /*const movie = await Movies.getMovieById(parseInt(req.params.id, 10));
     const productionCompany = await (await ProductionCompanies.getProductionCompanyById(parseInt(movie.ProductionCompanyId, 10))).get('name');
-    movie.ProductionCompanyName = productionCompany;
+    movie.ProductionCompanyName = productionCompany;*/
 
     /*const categories = await knex.from('movies_movie_categories')
                         .join('movie_categories', 'movies_movie_categories.categoryId', '=', 'movie_categories.id')
@@ -45,10 +45,10 @@ export const getMovieById = async (req: express.Request, res: express.Response) 
                         .where('movies_movie_categories.movieId', movie.id);*/
     // throw new Error('31337');
 
-    /*const movie = await Movies.forge<Movies>({id:req.params.id}).fetch({
+    const movie = await Movies.forge<Movies>({id:req.params.id}).fetch({
         require:false,
-        withRelated: ['productionCompanies']
-    })*/
+        withRelated: ['productionCompany']
+    })
 
     const categories = await MoviesMovieCategories.getCategoryId(parseInt(movie.id, 10));
     categories.forEach(async (category: any) => {
@@ -59,7 +59,7 @@ export const getMovieById = async (req: express.Request, res: express.Response) 
     });
 
     setTimeout(() => {
-            movie.categories = categories;
+            // movie.categories = categories;
             res.json(movie);
         }, 10
     );

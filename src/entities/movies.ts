@@ -13,7 +13,7 @@ export class Movies extends bookshelf.Model<Movies>{
     }
 
     get productionCompanies(){
-        return this.belongsTo(ProductionCompanies,'production_companies.id','movies.productionCompanyId');
+        return this.belongsTo(ProductionCompanies,'production_companies.id','movies.ProductionCompanyId');
     }
 
     static get movieCategories(){
