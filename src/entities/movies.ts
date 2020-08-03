@@ -1,9 +1,9 @@
 import { bookshelf } from '../utilities/knexconfig';
 import { ProductionCompanies } from './production_companies';
 import { MovieCategories } from './movie_categories';
+import { MoviesMovieCategories } from './movies_movie_categories';
 
 export class Movies extends bookshelf.Model<Movies>{
-    static query: any;
     get tableName(){
         return 'movies';
     }
@@ -12,19 +12,15 @@ export class Movies extends bookshelf.Model<Movies>{
         return this.count();
     }
 
+    movieCategories(){
+        return this.belongsToMany(MovieCategories, 'id', 'id');
+    }
+
     productionCompanies(){
-        return this.belongsTo(ProductionCompanies,'production_companies.id','movies.ProductionCompanyId');
+        return this.belongsTo(ProductionCompanies,'ProductionCompanyId','id');
     }
 
     static get movieCategories(){
         return this.forge<MovieCategories>().belongsToMany(MovieCategories,'id', 'id');
-    }
-
-    static async getMovies(page: number, pageSize: number){
-        return (await this.query({}).fetchPage({page, pageSize})).map((q: any) => q.attributes);
-    }
-
-    static async getMovieById(id: number){
-        return await (await this.forge<Movies>({id}).fetch({require:false})).attributes;
     }
 }

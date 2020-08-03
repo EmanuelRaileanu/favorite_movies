@@ -1,13 +1,14 @@
 import { bookshelf } from '../utilities/knexconfig';
 import { Movies } from '../entities/movies';
+import { MoviesMovieCategories } from './movies_movie_categories';
 
 export class MovieCategories extends bookshelf.Model<MovieCategories>{
     get tableName(){
         return 'movie_categories';
     }
 
-    static get movies(){
-        return this.forge<Movies>().belongsToMany(Movies, 'id', 'id');
+    movies(){
+        return this.belongsToMany(MoviesMovieCategories, 'categoryId', 'id');
     }
 
     static async getCategoryNameById(id: number){

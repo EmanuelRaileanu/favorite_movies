@@ -7,15 +7,16 @@ export class ProductionCompanies extends bookshelf.Model<ProductionCompanies>{
         return 'production_companies';
     }
 
-    get length(){
-        return this.count();
-    }
-
     movies(){
-        return this.hasMany(Movies, 'movies.productionCompanyId', 'production_companies.id')
+        return this.hasMany(Movies, 'ProductionCompanyId', 'id');
     }
 
     static async getProductionCompanyById(id: number){
-        return (await this.where<ProductionCompanies>({id}).fetch());
+        const query = await this.forge<ProductionCompanies>({id}).fetch({
+            require: false,
+            withRelated: ['movies']
+        });
+        query.attributes.totalMoviesMade = await query.related('movies').count();
+        return query.attributes;
     }
 }
