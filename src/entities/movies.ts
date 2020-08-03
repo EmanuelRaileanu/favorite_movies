@@ -1,5 +1,6 @@
 import { bookshelf } from '../utilities/knexconfig';
 import { ProductionCompanies } from './production_companies';
+import { MovieCategories } from './movie_categories';
 
 export class Movies extends bookshelf.Model<Movies>{
     static query: any;
@@ -11,8 +12,12 @@ export class Movies extends bookshelf.Model<Movies>{
         return this.count();
     }
 
-    static get productionCompanies(){
-        return this.forge<Movies>().belongsTo(ProductionCompanies,'id','productionCompanyId');
+    get productionCompanies(){
+        return this.belongsTo(ProductionCompanies,'production_companies.id','movies.productionCompanyId');
+    }
+
+    static get movieCategories(){
+        return this.forge<MovieCategories>().belongsToMany(MovieCategories,'id', 'id');
     }
 
     static async getMovies(page: number, pageSize: number){

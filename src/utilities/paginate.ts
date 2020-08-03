@@ -10,10 +10,6 @@ dotenv.config();
 
 const knex = Knex(config.development);
 
-function sleep(ms: number) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
-
 export const getLength = async (table: string) => parseInt(String((await knex(table).count('id'))[0]['count(`id`)']), 10);
 
 export const paginate = async (table: string, page: number, pageSize: number, length: number) => {
@@ -29,7 +25,7 @@ export const paginate = async (table: string, page: number, pageSize: number, le
         rows = await Movies.getMovies(page, pageSize);
 
         rows.forEach(async row => {
-            row.ProductionCompanyName = await ProductionCompanies.getProductionCompanyNameById(parseInt(row.ProductionCompanyId, 10));
+            row.ProductionCompanyName = await (await ProductionCompanies.getProductionCompanyById(parseInt(row.ProductionCompanyId, 10))).get('name');
 
             const categories = await MoviesMovieCategories.getCategoryId(parseInt(row.id, 10));
             categories.forEach(async (category: any) => {

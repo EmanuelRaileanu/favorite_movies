@@ -18,7 +18,7 @@ export const getMovies = async (req: express.Request, res: express.Response) => 
         res.status(404).send('Page not found');
         return;
     }
-    console.log(Movies.productionCompanies);
+
     setTimeout(() => {      // I don't think I'm supposed to do this
         res.send(result);
     }, 100);
@@ -36,7 +36,7 @@ export const getMovieById = async (req: express.Request, res: express.Response) 
                     .where('movies.id', req.params.id)
                     .first();*/
     const movie = await Movies.getMovieById(parseInt(req.params.id, 10));
-    const productionCompany = await ProductionCompanies.getProductionCompanyNameById(parseInt(movie.ProductionCompanyId, 10));
+    const productionCompany = await (await ProductionCompanies.getProductionCompanyById(parseInt(movie.ProductionCompanyId, 10))).get('name');
     movie.ProductionCompanyName = productionCompany;
 
     /*const categories = await knex.from('movies_movie_categories')
@@ -44,6 +44,11 @@ export const getMovieById = async (req: express.Request, res: express.Response) 
                         .select('movies_movie_categories.categoryId as id', 'movie_categories.category as name')
                         .where('movies_movie_categories.movieId', movie.id);*/
     // throw new Error('31337');
+
+    /*const movie = await Movies.forge<Movies>({id:req.params.id}).fetch({
+        require:false,
+        withRelated: ['productionCompanies']
+    })*/
 
     const categories = await MoviesMovieCategories.getCategoryId(parseInt(movie.id, 10));
     categories.forEach(async (category: any) => {

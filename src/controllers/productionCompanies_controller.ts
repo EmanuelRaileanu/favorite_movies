@@ -20,11 +20,12 @@ export const getProductionCompanies = async (req: express.Request, res: express.
 };
 
 export const getProductionCompanyById = async (req: express.Request, res: express.Response) => {
-    const company = await knex('production_companies').select('production_companies.*')
+    /*const company = await knex('production_companies').select('production_companies.*')
                 .join('movies',  'production_companies.id', '=', 'movies.ProductionCompanyId')
                 .groupBy('production_companies.id')
                 .count('movies.ProductionCompanyId as totalMoviesMade')
-                .where('production_companies.id', req.params.id).first();
+                .where('production_companies.id', req.params.id).first();*/
+    const company = await ProductionCompanies.getProductionCompanyById(parseInt(req.params.id, 10));
 
     res.send(company);
 };

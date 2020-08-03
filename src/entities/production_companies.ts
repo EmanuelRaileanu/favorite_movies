@@ -11,11 +11,11 @@ export class ProductionCompanies extends bookshelf.Model<ProductionCompanies>{
         return this.count();
     }
 
-    static get movies(){
-        return this.forge<Movies>().hasMany(Movies, 'productionCompanyId', 'id')
+    movies(){
+        return this.hasMany(Movies, 'movies.productionCompanyId', 'production_companies.id')
     }
 
-    static async getProductionCompanyNameById(id: number){
-        return (await this.where<ProductionCompanies>({id}).fetch()).get('name');
+    static async getProductionCompanyById(id: number){
+        return (await this.where<ProductionCompanies>({id}).fetch());
     }
 }
