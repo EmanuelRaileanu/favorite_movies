@@ -47,7 +47,7 @@ export const getMovieById = async (req: express.Request, res: express.Response) 
 
     const movie = await Movies.forge<Movies>({id:req.params.id}).fetch({
         require:false,
-        withRelated: ['productionCompany']
+        withRelated: ['productionCompanies']
     })
 
     const categories = await MoviesMovieCategories.getCategoryId(parseInt(movie.id, 10));

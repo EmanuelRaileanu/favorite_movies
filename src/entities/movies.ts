@@ -12,7 +12,7 @@ export class Movies extends bookshelf.Model<Movies>{
         return this.count();
     }
 
-    get productionCompanies(){
+    productionCompanies(){
         return this.belongsTo(ProductionCompanies,'production_companies.id','movies.ProductionCompanyId');
     }
 
