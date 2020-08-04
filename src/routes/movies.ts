@@ -9,7 +9,9 @@ const storage = multer.diskStorage({
         cb(null, './public/uploads/');
     },
     filename: (req: express.Request, file: any, cb: any) => {
-        cb(null, sha256(file.originalname.substring(0, file.originalname.lastIndexOf('.'))) + file.originalname.substring(file.originalname.lastIndexOf('.')));
+        const extensionDotIndex = file.originalname.lastIndexOf('.');
+        const extension = file.originalname.substring(extensionDotIndex);
+        cb(null, sha256(file.originalname.substring(0, extensionDotIndex)) + extension);
     },
 });
 
