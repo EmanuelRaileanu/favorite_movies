@@ -1,52 +1,36 @@
-import { knex } from '../utilities/knexconfig';
 import express from 'express';
-import { ProductionCompanies } from '../entities/production_companies';
+import { ProductionCompany } from '../entities/production_companies';
 
 export const getProductionCompanies = async (req: express.Request, res: express.Response) => {
-    /*rows = await knex.from(table).select(table.concat('.*'))
-                    .join('movies',  table.concat('.id'), '=', 'movies.ProductionCompanyId')
-                    .groupBy(table.concat('.id'))
-                    .count('movies.ProductionCompanyId as totalMoviesMade')
-                    .offset((page - 1) * pageSize)
-                    .limit(pageSize);*/
-    const query = await new ProductionCompanies().fetchAll({
-        require: false,
-        withRelated: ['movies']
-    });
-
-    const productionCompanies = await Promise.all(query.map(async q => {
-        q.attributes.totalMoviesMade = await q.related('movies').toJSON().length;
-        return q.attributes;
-    }));
-
-    /*const promise = Promise.all(productionCompanies.map(async productionCompany => {
-
-        console.log(await productionCompany.related('movies'));
-    }));*/
+    const productionCompanies = await new ProductionCompany().query((q: any) => {
+        q.join('movies', 'production_companies.id', '=', 'movies.ProductionCompanyId');
+        q.groupBy('production_companies.id');
+        q.select('production_companies.*');
+        q.count('movies.ProductionCompanyId as totalMoviesMade');
+    }).fetchAll();
 
     if(productionCompanies && !productionCompanies.length){
-        res.status(404).send('Page not found');
+        res.status(404).json('Page not found');
         return;
     }
     if(productionCompanies){
-        res.send(productionCompanies);
+        res.json(productionCompanies);
     }
 };
 
 export const getProductionCompanyById = async (req: express.Request, res: express.Response) => {
-    /*const company = await knex('production_companies').select('production_companies.*')
-                .join('movies',  'production_companies.id', '=', 'movies.ProductionCompanyId')
-                .groupBy('production_companies.id')
-                .count('movies.ProductionCompanyId as totalMoviesMade')
-                .where('production_companies.id', req.params.id).first();*/
-    const company = await ProductionCompanies.getProductionCompanyById(parseInt(req.params.id, 10));
-
-    res.send(company);
+    const productionCompany = await new ProductionCompany({id: req.params.id}).query((q: any) => {
+        q.join('movies', 'production_companies.id', '=', 'movies.ProductionCompanyId');
+        q.groupBy('production_companies.id');
+        q.select('production_companies.*');
+        q.count('movies.ProductionCompanyId as totalMoviesMade');
+    }).fetch();
+    res.json(productionCompany);
 };
 
 export const postProductionCompany = async (req: express.Request, res: express.Response) => {
     if(!req.body.name){
-        res.status(400).send('Bad request');
+        res.status(400).json('Bad request');
         return;
     }
 
@@ -54,14 +38,14 @@ export const postProductionCompany = async (req: express.Request, res: express.R
         name: req.body.name
     };
 
-    // await knex('production_companies').insert(productionCompany);
-    await new ProductionCompanies().save(productionCompany, {method: 'insert'});
+    const id = await new ProductionCompany().save(productionCompany, {method: 'insert'});
 
-    res.send('POST request received');
+    const result = await new ProductionCompany({id}).fetch();
+
+    res.json(result);
 };
 
 export const deleteProductionCompany = async (req: express.Request, res: express.Response) => {
-    // await knex('production_companies').where('id', req.params.id).del();
-    await new ProductionCompanies().where({id: req.params.id}).destroy();
+    await new ProductionCompany().where({id: req.params.id}).destroy();
     res.status(204).send();
 };

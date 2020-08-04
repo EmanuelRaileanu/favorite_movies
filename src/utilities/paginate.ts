@@ -11,17 +11,13 @@ export const getLength = async (table: string) => parseInt(String((await knex(ta
 
 export const paginate = async (table: string, page: number, pageSize: number, length: number) => {
     const pageCount = Math.ceil(length / pageSize);
-    /*rows = await knex.from(table).join('production_companies', 'Movie.ProductionCompanyId', '=', 'production_companies.id')
-                        .select('Movie.*', 'production_companies.name as ProductionCompanyName')
-                        .offset((page - 1) * pageSize)
-                        .limit(pageSize);*/
 
-    const query = await Movie.forge<Movie>().fetchAll({
+    const rows = (await new Movie().fetchAll({
         require:false,
-        withRelated: ['productionCompanies', 'categories']
-    });
+        withRelated: ['productionCompany', 'categories']
+    })).toJSON();
 
-    const rows = await Promise.all(query.map(async movie => {
+    /*const rows = await Promise.all(query.map(async movie => {
         movie.attributes.ProductionCompanyName = await movie.related('productionCompanies').get('name');
         movie.attributes.categories = await movie.related('categories').toJSON().map((c: any) => {
             return {
@@ -30,19 +26,7 @@ export const paginate = async (table: string, page: number, pageSize: number, le
             };
         });
         return movie.attributes;
-    }));
-
-    /*const categories = await knex.from('movies_movie_categories')
-                        .join('movie_categories', 'movies_movie_categories.categoryId', '=', 'movie_categories.id')
-                        .select('movies_movie_categories.movieId', 'movies_movie_categories.categoryId as id', 'movie_categories.category as name')
-                        .whereIn('movies_movie_categories.movieId', rows.map(r => r.id));
-
-    let filteredCategoryList;
-    for(const row of rows){
-        filteredCategoryList = categories.filter(c => c.movieId === row.id);
-        filteredCategoryList.forEach(category => delete category.movieId);
-        row.categories = filteredCategoryList;
-    }*/
+    }));*/
 
     const pagination = {
         page,
@@ -50,11 +34,9 @@ export const paginate = async (table: string, page: number, pageSize: number, le
         pageCount
     };
 
-    if(await Promise.resolve(rows)){
-        return {
-            results: rows,
-            pagination
-        };
-    }
+    return {
+        results: rows,
+        pagination
+    };
 };
 

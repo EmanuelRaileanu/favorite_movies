@@ -1,5 +1,5 @@
 import { bookshelf } from '../utilities/knexconfig';
-import { ProductionCompanies } from './production_companies';
+import { ProductionCompany } from './production_companies';
 import { MovieCategory } from './movie_categories';
 
 export class Movie extends bookshelf.Model<Movie>{
@@ -15,7 +15,7 @@ export class Movie extends bookshelf.Model<Movie>{
         return this.belongsToMany(MovieCategory, 'movies_movie_categories', 'movieId', 'categoryId');
     }
 
-    productionCompanies(){
-        return this.belongsTo(ProductionCompanies,'ProductionCompanyId','id');
+    productionCompany(){
+        return this.belongsTo(ProductionCompany,'ProductionCompanyId','id');
     }
 }
