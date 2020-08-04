@@ -3,6 +3,8 @@ import express from 'express';
 import { paginate, getLength } from '../utilities/paginate';
 import { Movie } from '../entities/movies';
 import { MovieCategory } from '../entities/movie_categories';
+import { File } from '../entities/files';
+import fs from 'fs';
 
 export const getMovies = async (req: express.Request, res: express.Response) => {
     const reg = new RegExp('^[0-9]+');
@@ -31,7 +33,7 @@ export const getMovieById = async (req: express.Request, res: express.Response) 
     const movie = (await new Movie({id:req.params.id}).fetch({
         require:false,
         withRelated: ['productionCompany', 'categories']
-    })).toJSON();
+    }));
 
     if(!movie){
         res.status(404).json('Movie not found');
@@ -55,6 +57,19 @@ export const postMovie = async (req: express.Request, res: express.Response) => 
         return;
     }
 
+    let posterId;
+    if(req.file){
+        const poster = {
+            originalFileName: req.file.originalname,
+            mimeType: req.file.mimetype,
+            relativePath: req.file.path,
+            size: req.file.size,
+            fileName: req.file.filename
+        };
+
+        posterId = (await new File().save(poster, {method: 'insert'})).get('id');
+    }
+
     const movie: any = {
         title: req.body.title,
         description: req.body.description,
@@ -63,7 +78,8 @@ export const postMovie = async (req: express.Request, res: express.Response) => 
         budget: req.body.budget,
         gross: req.body.gross,
         overallRating: req.body.overallRating,
-        ProductionCompanyId: req.body.ProductionCompanyId
+        ProductionCompanyId: req.body.ProductionCompanyId,
+        posterId
     };
 
     const newCategories: any[] = [];
@@ -71,7 +87,7 @@ export const postMovie = async (req: express.Request, res: express.Response) => 
 
     await knex.transaction(async trx => {
         id = (await new Movie().save(movie, {transacting: trx, method: 'insert'})).get('id');
-        if(req.body.hasOwnProperty('categories')){
+        if(req.body.categories !== undefined){
             let categoryIds;
             categoryIds = (req.body.categories.map((category: any) => category.id));
             for(let i = 0; i < categoryIds.length; i++){
@@ -105,14 +121,17 @@ export const updateMovie = async (req: express.Request, res: express.Response) =
         res.send(`Canot update movie with id ${req.params.id} because it does not exist in the database`);
         return;
     }
+
+    let posterId: number;
+
     const finalCategoryIds: any[] = [];
     await knex.transaction(async trx => {
-        if(req.body.hasOwnProperty('categories')){
+        const movie = await new Movie({id: req.params.id}).fetch({
+            require: false,
+            withRelated: ['categories', 'poster']
+        });
+        if(req.body.categories !== undefined){
             const updatedCategoryIds = req.body.categories.map((cat: any) => cat.id);
-            const movie = await new Movie({id: req.params.id}).fetch({
-                require: false,
-                withRelated: ['categories']
-            });
             const oldCategoryIds = await Promise.all(movie.related('categories').toJSON().map((category: any) => category.id));
             await movie.categories().detach(oldCategoryIds, {transacting: trx});
             for(const updatedCategoryId of updatedCategoryIds){
@@ -124,7 +143,33 @@ export const updateMovie = async (req: express.Request, res: express.Response) =
             delete req.body.categories;
         }
 
+        if(req.file){
+
+            const poster = {
+                originalFileName: req.file.originalname,
+                mimeType: req.file.mimetype,
+                relativePath: req.file.path,
+                size: req.file.size,
+                fileName: req.file.filename
+            };
+
+            posterId = (await new File().save(poster, {method: 'insert'})).get('id');
+        }
+
+        req.body.posterId = posterId;
+
         await new Movie({id: req.params.id}).save(req.body, {transacting: trx, method: 'update'});
+
+        if(req.file){
+            if((await new Movie({id:req.params.id}).fetch()).get('posterId') !== null){
+                await movie.poster().where({id: movie.related('poster').get('id')}).destroy({transacting: trx});
+                fs.unlink(await movie.related('poster').get('relativePath'), (err) => {
+                    if(err){
+                        throw err;
+                    }
+                });
+            }
+        }
     });
 
     const updatedMovie = (await new Movie({id: req.params.id}).fetch({
@@ -143,11 +188,21 @@ export const deleteMovie = async (req: express.Request, res: express.Response) =
     await knex.transaction(async trx => {
         const movie = await new Movie({id: req.params.id}).fetch({
             require: false,
-            withRelated: ['categories']
+            withRelated: ['categories', 'poster']
         });
         const oldCategoryIds = await Promise.all(movie.related('categories').toJSON().map((category: any) => category.id));
         await movie.categories().detach(oldCategoryIds, {transacting: trx});
-        await movie.destroy({transacting: trx});
+
+        await movie.where({id:req.params.id}).destroy({transacting: trx});
+
+        if((await new Movie({id:req.params.id}).fetch()).get('posterId') !== null){
+            await movie.poster().where({id: movie.related('poster').get('id')}).destroy({transacting: trx});
+            fs.unlink(await movie.related('poster').get('relativePath'), (err) => {
+                if(err){
+                    throw err;
+                }
+            });
+        }
     });
     res.status(204).send();
 };

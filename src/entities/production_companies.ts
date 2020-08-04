@@ -10,4 +10,5 @@ export class ProductionCompany extends bookshelf.Model<ProductionCompany>{
     movies(){
         return this.hasMany(Movie, 'ProductionCompanyId', 'id');
     }
+
 }
