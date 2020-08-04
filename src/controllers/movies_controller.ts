@@ -149,7 +149,7 @@ export const updateMovie = async (req: express.Request, res: express.Response) =
                 withRelated: ['categories']
             });
             const oldCategoryIds = await Promise.all(movie.related('categories').toJSON().map((category: any) => category.id));
-            await new Movie({id: req.params.id}).categories().detach(oldCategoryIds, {transacting: trx});
+            await movie.categories().detach(oldCategoryIds, {transacting: trx});
             for(const updatedCategoryId of updatedCategoryIds){
                 if(await checkIfCategoryExists(updatedCategoryId)){
                     finalCategoryIds.push(updatedCategoryId);
@@ -160,7 +160,7 @@ export const updateMovie = async (req: express.Request, res: express.Response) =
                     await knex('movies_movie_categories').transacting(trx).insert(newCategory);*/
                 }
             }
-            await new Movie({id: req.params.id}).categories().attach(finalCategoryIds, {transacting: trx});
+            await movie.categories().attach(finalCategoryIds, {transacting: trx});
             delete req.body.categories;
         }
 
@@ -183,9 +183,15 @@ export const updateMovie = async (req: express.Request, res: express.Response) =
 
 export const deleteMovie = async (req: express.Request, res: express.Response) => {
     await knex.transaction(async trx => {
-        await knex('movies_movie_categories').transacting(trx).where('movieId', req.params.id).del();
+        // await knex('movies_movie_categories').transacting(trx).where('movieId', req.params.id).del();
         // await knex('movies').transacting(trx).where('id', req.params.id).del();
-        await new Movie({id: req.params.id}).destroy({transacting: trx});
+        const movie = await new Movie({id: req.params.id}).fetch({
+            require: false,
+            withRelated: ['categories']
+        });
+        const oldCategoryIds = await Promise.all(movie.related('categories').toJSON().map((category: any) => category.id));
+        await movie.categories().detach(oldCategoryIds, {transacting: trx});
+        await movie.destroy({transacting: trx});
     });
     res.status(204).send();
 };
