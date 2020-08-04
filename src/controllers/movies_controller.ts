@@ -1,10 +1,8 @@
 import { knex } from '../utilities/knexconfig';
 import express from 'express';
 import { paginate, getLength } from '../utilities/paginate';
-import { Movies } from '../entities/movies';
-import { MovieCategories } from '../entities/movie_categories';
-import { MoviesMovieCategories } from '../entities/movies_movie_categories';
-
+import { Movie } from '../entities/movies';
+import { MovieCategory } from '../entities/movie_categories';
 
 export const getMovies = async (req: express.Request, res: express.Response) => {
     const reg = new RegExp('^[0-9]+');
@@ -25,7 +23,7 @@ export const getMovies = async (req: express.Request, res: express.Response) => 
 
 export const getMovieCategories = async (req: express.Request, res: express.Response) => {
     // const rows = await knex.from('movie_categories').select('*');
-    const rows = (await (MovieCategories.forge<MovieCategories>().fetchAll())).map(row => row.attributes);
+    const rows = (await (MovieCategory.forge<MovieCategory>().fetchAll())).map(row => row.attributes);
     res.json(rows);
 };
 
@@ -41,9 +39,9 @@ export const getMovieById = async (req: express.Request, res: express.Response) 
                         .select('movies_movie_categories.categoryId as id', 'movie_categories.category as name')
                         .where('movies_movie_categories.movieId', movie.id);*/
     // throw new Error('31337');
-    const query = await Movies.forge<Movies>({id:req.params.id}).fetch({
+    const query = await Movie.forge<Movie>({id:req.params.id}).fetch({
         require:false,
-        withRelated: ['productionCompanies']
+        withRelated: ['productionCompanies', 'categories']
     });
 
     if(!query){
@@ -51,15 +49,15 @@ export const getMovieById = async (req: express.Request, res: express.Response) 
         return;
     }
 
-    const movie = query.attributes;
+    const movie = query.toJSON();
     movie.ProductionCompanyName = query.related('productionCompanies').get('name');
 
-    const categories = await MoviesMovieCategories.getCategoriesIds(parseInt(movie.id, 10));
+    const categories = await query.related('categories').toJSON();
     const result = await Promise.all(
         categories.map(async (category: any) => {
             return {
-                id: category.categoryId,
-                name: await MovieCategories.getCategoryNameById(category.categoryId)
+                id: category.id,
+                name: category.category
             };
         })
     );
@@ -70,9 +68,9 @@ export const getMovieById = async (req: express.Request, res: express.Response) 
     }
 };
 
-async function checkIfCategoryExists(category: any){
+async function checkIfCategoryExists(categoryId: number){
     // const find = await knex.from('movie_categories').where({ id: category.id }).first();
-    const find = await MovieCategories.forge<MovieCategories>({id: category.id}).fetch({require: false});
+    const find = await MovieCategory.forge<MovieCategory>({id: categoryId}).fetch({require: false});
     if(!find){
         return false;
     }
@@ -101,32 +99,35 @@ export const postMovie = async (req: express.Request, res: express.Response) => 
 
     await knex.transaction(async trx => {
         // id = await knex('movies').transacting(trx).insert(movie);
-        id = (await new Movies(movie).save(undefined, {transacting: trx, method: 'insert'})).get('id');
-        movie.id = id;
+        id = (await new Movie().save(movie, {transacting: trx, method: 'insert'})).get('id');
         if(req.body.hasOwnProperty('categories')){
-            const categories = req.body.categories;
-            for(const category of categories){
-                if(await checkIfCategoryExists(category)){
-                    newCategories.push(category);
-                    const entry = {
-                        movieId: id,
-                        categoryId: category.id
-                    };
-                    await knex('movies_movie_categories').transacting(trx).insert(entry);       
-                    // await new MoviesMovieCategories(entry).save(undefined, {transacting: trx, method: 'insert'});    //nu merge desi pentru Movies merge aceeasi sintaxa
+            let categoryIds;
+            categoryIds = (req.body.categories.map((category: any) => category.id));
+            for(let i = 0; i < categoryIds.length; i++){
+                if(!await checkIfCategoryExists(categoryIds[i])){
+                    categoryIds.splice(i, 1);
                 }
             }
+            await new Movie({id}).categories().attach(categoryIds, {transacting:trx});
         }
     });
-    const newEntry = (await Movies.forge<Movies>({id}).fetch()).attributes;
-    newEntry.categories = newCategories;
-
+    let newEntry;
+    newEntry = (await new Movie({id}).fetch({
+        require: false,
+        withRelated: ['categories']
+    })).toJSON();
+    newEntry.categories = newEntry.categories.map((cat: any) => {
+        return{
+            id: cat.id,
+            name: cat.category
+        };
+    });
     res.send(newEntry);
 };
 
 async function checkIfMovieExists(id: number){
     // const find = await knex.from('movies').where({ id }).first();
-    const find = await Movies.forge<Movies>({id}).fetch();
+    const find = await Movie.forge<Movie>({id}).fetch();
     if(!find){
         return false;
     }
@@ -138,41 +139,53 @@ export const updateMovie = async (req: express.Request, res: express.Response) =
         res.send(`Canot update movie with id ${req.params.id} because it does not exist in the database`);
         return;
     }
-    const finalCategories: any[] = [];
+    const finalCategoryIds: any[] = [];
     await knex.transaction(async trx => {
         if(req.body.hasOwnProperty('categories')){
-            const updatedCategories = req.body.categories;
+            const updatedCategoryIds = req.body.categories.map((cat: any) => cat.id);
             // await knex('movies_movie_categories').transacting(trx).where('movieId', req.params.id).del();
-            await new MoviesMovieCategories().where({movieId: req.params.id}).destroy({transacting: trx});
-            for(const updatedCategory of updatedCategories){
-                if(await checkIfCategoryExists(updatedCategory)){
-                    finalCategories.push(updatedCategory);
-                    const newCategory = {
+            const movie = await new Movie({id: req.params.id}).fetch({
+                require: false,
+                withRelated: ['categories']
+            });
+            const oldCategoryIds = await Promise.all(movie.related('categories').toJSON().map((category: any) => category.id));
+            await new Movie({id: req.params.id}).categories().detach(oldCategoryIds, {transacting: trx});
+            for(const updatedCategoryId of updatedCategoryIds){
+                if(await checkIfCategoryExists(updatedCategoryId)){
+                    finalCategoryIds.push(updatedCategoryId);
+                    /*const newCategory = {
                         movieId: req.params.id,
                         categoryId: updatedCategory.id
                     };
-                    await knex('movies_movie_categories').transacting(trx).insert(newCategory);
-                    // await new MoviesMovieCategories().save(newCategory, {transacting: trx, method: 'insert'});   //nu merge desi pentru Movies merge aceeasi sintaxa
+                    await knex('movies_movie_categories').transacting(trx).insert(newCategory);*/
                 }
             }
+            await new Movie({id: req.params.id}).categories().attach(finalCategoryIds, {transacting: trx});
             delete req.body.categories;
         }
 
         // await knex('movies').transacting(trx).where('id', req.params.id).update(req.body);
-        await new Movies({id: req.params.id}).save(req.body, {transacting: trx, method: 'update'});
+        await new Movie({id: req.params.id}).save(req.body, {transacting: trx, method: 'update'});
     });
     // const updatedMovie = await knex.from('movies').select('*').where('id', req.params.id).first();
-    const updatedMovie = (await new Movies({id: req.params.id}).fetch()).attributes;
-    updatedMovie.categories = finalCategories;
+    const updatedMovie = (await new Movie({id: req.params.id}).fetch({
+        require: false,
+        withRelated: ['categories']
+    })).toJSON();
+    updatedMovie.categories = updatedMovie.categories.map((c: any) => {
+        return{
+            id: c.id,
+            name: c.category
+        };
+    });
     res.send(updatedMovie);
 };
 
 export const deleteMovie = async (req: express.Request, res: express.Response) => {
     await knex.transaction(async trx => {
-        // await knex('movies_movie_categories').transacting(trx).where('movieId', req.params.id).del();
+        await knex('movies_movie_categories').transacting(trx).where('movieId', req.params.id).del();
         // await knex('movies').transacting(trx).where('id', req.params.id).del();
-        await new MoviesMovieCategories().where({movieId: req.params.id}).destroy({transacting: trx});
-        await new Movies({id: req.params.id}).destroy({transacting: trx});
+        await new Movie({id: req.params.id}).destroy({transacting: trx});
     });
     res.status(204).send();
 };

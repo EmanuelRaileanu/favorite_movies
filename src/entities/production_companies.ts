@@ -1,5 +1,5 @@
 import { bookshelf } from '../utilities/knexconfig';
-import { Movies } from './movies';
+import { Movie } from './movies';
 
 export class ProductionCompanies extends bookshelf.Model<ProductionCompanies>{
 
@@ -8,7 +8,7 @@ export class ProductionCompanies extends bookshelf.Model<ProductionCompanies>{
     }
 
     movies(){
-        return this.hasMany(Movies, 'ProductionCompanyId', 'id');
+        return this.hasMany(Movie, 'ProductionCompanyId', 'id');
     }
 
     static async getProductionCompanyById(id: number){

@@ -1,9 +1,7 @@
 import dotenv from 'dotenv';
 import Knex from 'knex';
 import * as config from '../../knexfile.js';
-import { Movies } from '../entities/movies';
-import { MovieCategories } from '../entities/movie_categories';
-import { MoviesMovieCategories } from '../entities/movies_movie_categories';
+import { Movie } from '../entities/movies';
 
 dotenv.config();
 
@@ -13,35 +11,25 @@ export const getLength = async (table: string) => parseInt(String((await knex(ta
 
 export const paginate = async (table: string, page: number, pageSize: number, length: number) => {
     const pageCount = Math.ceil(length / pageSize);
-    /*rows = await knex.from(table).join('production_companies', 'movies.ProductionCompanyId', '=', 'production_companies.id')
-                        .select('movies.*', 'production_companies.name as ProductionCompanyName')
+    /*rows = await knex.from(table).join('production_companies', 'Movie.ProductionCompanyId', '=', 'production_companies.id')
+                        .select('Movie.*', 'production_companies.name as ProductionCompanyName')
                         .offset((page - 1) * pageSize)
                         .limit(pageSize);*/
 
-    const query = await Movies.forge<Movies>().fetchAll({
+    const query = await Movie.forge<Movie>().fetchAll({
         require:false,
-        withRelated: ['productionCompanies']
+        withRelated: ['productionCompanies', 'categories']
     });
 
     const rows = await Promise.all(query.map(async movie => {
         movie.attributes.ProductionCompanyName = await movie.related('productionCompanies').get('name');
+        movie.attributes.categories = await movie.related('categories').toJSON().map((c: any) => {
+            return {
+                id: c.id,
+                name: c.category
+            };
+        });
         return movie.attributes;
-    }));
-
-    const promise = await Promise.all(rows.map(async row => {
-
-        const categories = await MoviesMovieCategories.getCategoriesIds(parseInt(row.id, 10));
-        const result = await Promise.all(
-            categories.map(async (category: any) => {
-                return {
-                    id: category.categoryId,
-                    name: await MovieCategories.getCategoryNameById(category.categoryId)
-                };
-            })
-        );
-        if(result){
-            row.categories = result;
-        }
     }));
 
     /*const categories = await knex.from('movies_movie_categories')
@@ -62,7 +50,7 @@ export const paginate = async (table: string, page: number, pageSize: number, le
         pageCount
     };
 
-    if(await Promise.all([rows, promise])){
+    if(await Promise.resolve(rows)){
         return {
             results: rows,
             pagination

@@ -1,9 +1,8 @@
 import { bookshelf } from '../utilities/knexconfig';
 import { ProductionCompanies } from './production_companies';
-import { MovieCategories } from './movie_categories';
-import { MoviesMovieCategories } from './movies_movie_categories';
+import { MovieCategory } from './movie_categories';
 
-export class Movies extends bookshelf.Model<Movies>{
+export class Movie extends bookshelf.Model<Movie>{
     get tableName(){
         return 'movies';
     }
@@ -12,15 +11,11 @@ export class Movies extends bookshelf.Model<Movies>{
         return this.count();
     }
 
-    movieCategories(){
-        return this.belongsToMany(MovieCategories, 'id', 'id');
+    categories(){
+        return this.belongsToMany(MovieCategory, 'movies_movie_categories', 'movieId', 'categoryId');
     }
 
     productionCompanies(){
         return this.belongsTo(ProductionCompanies,'ProductionCompanyId','id');
-    }
-
-    static get movieCategories(){
-        return this.forge<MovieCategories>().belongsToMany(MovieCategories,'id', 'id');
     }
 }
