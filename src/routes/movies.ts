@@ -2,13 +2,14 @@ import express from 'express';
 import * as controller from '../controllers/movies_controller';
 import { asyncMiddleware } from '../utilities/asyncMiddleware';
 import multer from 'multer';
+import { sha256 } from '../utilities/sha256';
 
 const storage = multer.diskStorage({
     destination: (req: express.Request, file: any, cb: any) => {
         cb(null, './public/uploads/');
     },
     filename: (req: express.Request, file: any, cb: any) => {
-        cb(null, new Date().toISOString() + file.originalname);
+        cb(null, sha256(file.originalname.substring(0, file.originalname.lastIndexOf('.'))) + file.originalname.substring(file.originalname.lastIndexOf('.')));
     },
 });
 

@@ -52,40 +52,39 @@ async function checkIfCategoryExists(categoryId: number){
 }
 
 export const postMovie = async (req: express.Request, res: express.Response) => {
-    if(!req.body.title){
-        res.status(400).json('Bad request');
-        return;
-    }
-
-    let posterId;
-    if(req.file){
-        const poster = {
-            originalFileName: req.file.originalname,
-            mimeType: req.file.mimetype,
-            relativePath: req.file.path,
-            size: req.file.size,
-            fileName: req.file.filename
-        };
-
-        posterId = (await new File().save(poster, {method: 'insert'})).get('id');
-    }
-
-    const movie: any = {
-        title: req.body.title,
-        description: req.body.description,
-        runtime: req.body.runtime,
-        releaseDate: req.body.releaseDate,
-        budget: req.body.budget,
-        gross: req.body.gross,
-        overallRating: req.body.overallRating,
-        ProductionCompanyId: req.body.ProductionCompanyId,
-        posterId
-    };
-
-    const newCategories: any[] = [];
     let id;
 
     await knex.transaction(async trx => {
+        if(!req.body.title){
+            res.status(400).json('Bad request');
+            return;
+        }
+
+        let posterId;
+        if(req.file){
+            const poster = {
+                originalFileName: req.file.originalname,
+                mimeType: req.file.mimetype,
+                relativePath: req.file.path,
+                size: req.file.size,
+                fileName: req.file.filename
+            };
+
+            posterId = (await new File().save(poster, {method: 'insert'})).get('id');
+        }
+
+        const movie: any = {
+            title: req.body.title,
+            description: req.body.description,
+            runtime: req.body.runtime,
+            releaseDate: req.body.releaseDate,
+            budget: req.body.budget,
+            gross: req.body.gross,
+            overallRating: req.body.overallRating,
+            ProductionCompanyId: req.body.ProductionCompanyId,
+            posterId
+        };
+
         id = (await new Movie().save(movie, {transacting: trx, method: 'insert'})).get('id');
         if(req.body.categories !== undefined){
             let categoryIds;
@@ -99,8 +98,7 @@ export const postMovie = async (req: express.Request, res: express.Response) => 
         }
     });
 
-    let newEntry;
-    newEntry = (await new Movie({id}).fetch({
+    const newEntry = (await new Movie({id}).fetch({
         require: false,
         withRelated: ['productionCompany', 'categories']
     })).toJSON();
@@ -153,7 +151,10 @@ export const updateMovie = async (req: express.Request, res: express.Response) =
                 fileName: req.file.filename
             };
 
-            posterId = (await new File().save(poster, {method: 'insert'})).get('id');
+            posterId = (await new File().save(poster, {
+                transacting: trx,
+                method: 'insert'
+            })).get('id');
         }
 
         req.body.posterId = posterId;
