@@ -6,6 +6,7 @@ export class MovieCategory extends bookshelf.Model<MovieCategory>{
         return 'movie_categories';
     }
 
+    // many-to-many relationship with Movie
     movies(){
         return this.belongsToMany(Movie, 'movies_movie_categories', 'categoryId', 'movieId');
     }

@@ -7,6 +7,7 @@ export class ProductionCompany extends bookshelf.Model<ProductionCompany>{
         return 'production_companies';
     }
 
+    // one-to-many relationshop with Movie
     movies(){
         return this.hasMany(Movie, 'ProductionCompanyId', 'id');
     }

@@ -9,6 +9,7 @@ export class File extends bookshelf.Model<File>{
         return 'files';
     }
 
+    // one-to-one relationship with Movie
     movie(){
         return this.belongsTo(Movie, 'id', 'posterId');
     }
