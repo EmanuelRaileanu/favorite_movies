@@ -13,6 +13,7 @@ const port = process.env.SERVER_PORT;
 
 app.use(express.json());
 app.use(bodyParser.json());
+app.use('/public', express.static('public'));
 
 root.register(app);
 
