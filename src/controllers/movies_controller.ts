@@ -35,7 +35,7 @@ export const getMovieCategories = async (req: express.Request, res: express.Resp
 export const getMovieById = async (req: express.Request, res: express.Response) => {
     const movie = (await new Movie({id:req.params.id}).fetch({
         require:false,
-        withRelated: ['productionCompany', 'categories']
+        withRelated: ['productionCompany', 'categories', 'poster']
     }));
 
     if(!movie){
@@ -73,7 +73,7 @@ export const postMovie = async (req: express.Request, res: express.Response) => 
                 fileName: req.file.filename
             };
 
-            posterId = (await new File().save(poster, {method: 'insert'})).get('id');
+            posterId = (await new File().save(poster, {transacting: trx, method: 'insert'})).get('id');
         }
 
         const movie: any = {
@@ -144,7 +144,6 @@ export const updateMovie = async (req: express.Request, res: express.Response) =
         }
 
         let oldPosterPath;
-        // let updatedBody;
 
         if(req.file){
 
@@ -153,6 +152,11 @@ export const updateMovie = async (req: express.Request, res: express.Response) =
             req.body.posterId = null;
             await movie.save(req.body, {transacting: trx, method: 'update'});
 
+            if(oldPosterPath){
+                await movie.poster().where({id: movie.related('poster').get('id')}).destroy({transacting: trx});
+                // await movie.related('poster').destroy(); // Property 'destroy' does not exist on type 'Model<any> | Collection<Model<any>>'
+            }
+
             const poster = {
                 originalFileName: req.file.originalname,
                 mimeType: req.file.mimetype,
@@ -160,11 +164,6 @@ export const updateMovie = async (req: express.Request, res: express.Response) =
                 size: req.file.size,
                 fileName: req.file.filename
             };
-
-            if(oldPosterPath){
-                await movie.poster().where({id: movie.related('poster').get('id')}).destroy({transacting: trx});
-                // await movie.related('poster').destroy(); // Property 'destroy' does not exist on type 'Model<any> | Collection<Model<any>>'
-            }
 
             posterId = (await new File().save(poster, {
                 transacting: trx,
@@ -204,11 +203,7 @@ export const deleteMovie = async (req: express.Request, res: express.Response) =
 
         if((await new Movie({id:req.params.id}).fetch()).get('posterId') !== null){
             await movie.poster().where({id: movie.related('poster').get('id')}).destroy({transacting: trx});
-            fs.unlink(await movie.related('poster').get('relativePath'), (err) => {
-                if(err){
-                    throw err;
-                }
-            });
+            await deleteFile(await movie.related('poster').get('relativePath'));
         }
     });
     res.status(204).send();

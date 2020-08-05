@@ -3,6 +3,8 @@ import { ProductionCompany } from './production_companies';
 import { MovieCategory } from './movie_categories';
 import { File } from './files';
 
+bookshelf.plugin('bookshelf-virtuals-plugin');
+
 export class Movie extends bookshelf.Model<Movie>{
     get tableName(){
         return 'movies';
@@ -19,4 +21,5 @@ export class Movie extends bookshelf.Model<Movie>{
     poster(){
         return this.hasOne(File, 'id', 'posterId');
     }
+
 }
