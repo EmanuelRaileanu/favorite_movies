@@ -13,7 +13,7 @@ export class Actor extends bookshelf.Model<Actor>{
     }
 
     // many-to-many relationship with Movie
-    actor(){
+    movies(){
         return this.belongsToMany(Movie, 'movies_actors', 'actorId', 'movieId');
     }
 }

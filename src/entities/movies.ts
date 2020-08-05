@@ -26,7 +26,7 @@ export class Movie extends bookshelf.Model<Movie>{
     }
 
     // many-to-many relationship with Actor
-    actor(){
+    actors(){
         return this.belongsToMany(Actor, 'movies_actors', 'movieId', 'actorId');
     }
 

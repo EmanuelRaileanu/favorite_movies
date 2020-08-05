@@ -4,6 +4,7 @@ import * as root from './routes/root';
 import * as movies from './routes/movies';
 import * as err from './routes/err';
 import * as productionCompanies from './routes/productionCompanies';
+import * as actors from './routes/actors';
 import * as bodyParser from 'body-parser';
 
 dotenv.config();
@@ -20,6 +21,8 @@ root.register(app);
 movies.register(app);
 
 productionCompanies.register(app);
+
+actors.register(app);
 
 err.register(app);
 

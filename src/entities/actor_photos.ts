@@ -3,7 +3,7 @@ import { Actor } from './actors';
 
 export class ActorPhoto extends bookshelf.Model<ActorPhoto>{
     get tableName(){
-        return 'actors';
+        return 'actor_photos';
     }
 
     // one-to-one relationship with Actor

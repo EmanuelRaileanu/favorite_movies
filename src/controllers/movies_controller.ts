@@ -22,9 +22,7 @@ export const getMovies = async (req: express.Request, res: express.Response) => 
         return;
     }
 
-    if(result){
-        res.json(result);
-    }
+    res.json(result);
 };
 
 export const getMovieCategories = async (req: express.Request, res: express.Response) => {
@@ -33,10 +31,10 @@ export const getMovieCategories = async (req: express.Request, res: express.Resp
 };
 
 export const getMovieById = async (req: express.Request, res: express.Response) => {
-    const movie = (await new Movie({id:req.params.id}).fetch({
+    const movie = await new Movie({id:req.params.id}).fetch({
         require:false,
         withRelated: ['productionCompany', 'categories', 'poster']
-    }));
+    });
 
     if(!movie){
         res.status(404).json('Movie not found');
@@ -73,7 +71,9 @@ export const postMovie = async (req: express.Request, res: express.Response) => 
                 fileName: req.file.filename
             };
 
-            posterId = (await new File().save(poster, {transacting: trx, method: 'insert'})).get('id');
+            posterId = (await new File().save(poster, {
+                transacting: trx, method: 'insert'
+            })).get('id');
         }
 
         const movie: any = {
@@ -119,7 +119,7 @@ async function checkIfMovieExists(id: number){
 
 export const updateMovie = async (req: express.Request, res: express.Response) => {
     if(!await checkIfMovieExists(parseInt(req.params.id, 10))){
-        res.send(`Canot update movie with id ${req.params.id} because it does not exist in the database`);
+        res.json(`Canot update movie with id ${req.params.id} because it does not exist in the database`);
         return;
     }
 
