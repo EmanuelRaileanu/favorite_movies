@@ -5,6 +5,9 @@ import { Movie } from '../entities/movies';
 import { MovieCategory } from '../entities/movie_categories';
 import { File } from '../entities/files';
 import fs from 'fs';
+import util from 'util';
+
+const deleteFile = util.promisify(fs.unlink);
 
 export const getMovies = async (req: express.Request, res: express.Response) => {
     const reg = new RegExp('^[0-9]+');
@@ -121,7 +124,6 @@ export const updateMovie = async (req: express.Request, res: express.Response) =
     }
 
     let posterId: number;
-
     const finalCategoryIds: any[] = [];
     await knex.transaction(async trx => {
         const movie = await new Movie({id: req.params.id}).fetch({
@@ -141,7 +143,15 @@ export const updateMovie = async (req: express.Request, res: express.Response) =
             delete req.body.categories;
         }
 
+        let oldPosterPath;
+        // let updatedBody;
+
         if(req.file){
+
+            oldPosterPath = movie.related('poster').get('relativePath');
+
+            req.body.posterId = null;
+            await movie.save(req.body, {transacting: trx, method: 'update'});
 
             const poster = {
                 originalFileName: req.file.originalname,
@@ -151,25 +161,21 @@ export const updateMovie = async (req: express.Request, res: express.Response) =
                 fileName: req.file.filename
             };
 
+            if(oldPosterPath){
+                await movie.poster().where({id: movie.related('poster').get('id')}).destroy({transacting: trx});
+                // await movie.related('poster').destroy(); // Property 'destroy' does not exist on type 'Model<any> | Collection<Model<any>>'
+            }
+
             posterId = (await new File().save(poster, {
                 transacting: trx,
                 method: 'insert'
             })).get('id');
         }
 
-        req.body.posterId = posterId;
+        await movie.save({posterId}, {transacting: trx, method: 'update'});
 
-        await new Movie({id: req.params.id}).save(req.body, {transacting: trx, method: 'update'});
-
-        if(req.file){
-            if((await new Movie({id:req.params.id}).fetch()).get('posterId') !== null){
-                await movie.poster().where({id: movie.related('poster').get('id')}).destroy({transacting: trx});
-                fs.unlink(await movie.related('poster').get('relativePath'), (err) => {
-                    if(err){
-                        throw err;
-                    }
-                });
-            }
+        if(oldPosterPath !== req.file.path){
+            await deleteFile(oldPosterPath);
         }
     });
 
