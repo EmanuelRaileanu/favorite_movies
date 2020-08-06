@@ -33,7 +33,7 @@ export const getMovieCategories = async (req: express.Request, res: express.Resp
 export const getMovieById = async (req: express.Request, res: express.Response) => {
     const movie = await new Movie({id:req.params.id}).fetch({
         require:false,
-        withRelated: ['productionCompany', 'categories', 'poster']
+        withRelated: ['productionCompany', 'categories', 'poster', 'actors']
     });
 
     if(!movie){
@@ -173,7 +173,7 @@ export const updateMovie = async (req: express.Request, res: express.Response) =
 
         await movie.save({posterId}, {transacting: trx, method: 'update'});
 
-        if(oldPosterPath !== req.file.path){
+        if(oldPosterPath && oldPosterPath !== req.file.path){
             await deleteFile(oldPosterPath);
         }
     });

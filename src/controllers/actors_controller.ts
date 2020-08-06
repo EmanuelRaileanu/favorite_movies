@@ -4,13 +4,14 @@ import fs from 'fs';
 import util from 'util';
 import { Actor } from '../entities/actors';
 import { ActorPhoto } from '../entities/actor_photos';
+import { Movie } from '../entities/movies';
 
 const deleteFile = util.promisify(fs.unlink);
 
 export const getActors = async (req: express.Request, res: express.Response) => {
     const actors = await new Actor().fetchAll({
         require: false,
-        withRelated: ['movies', 'actor_photos']
+        withRelated: ['movies', 'actorPhoto']
     });
 
     if(!actors){
@@ -24,7 +25,7 @@ export const getActors = async (req: express.Request, res: express.Response) => 
 export const getActorById = async (req: express.Request, res: express.Response) => {
     const actor = await new Actor({id: req.params.id}).fetch({
         require: false,
-        withRelated: ['movies', 'actor_photos']
+        withRelated: ['movies', 'actorPhoto']
     });
 
     if(!actor){
@@ -58,19 +59,36 @@ export const postActor = async (req: express.Request, res: express.Response) => 
             })).get('id');
         }
 
+        const movies = req.body.movies;
+        delete req.body.movies;
+
         req.body.recentPhotoId = imageId;
         id = (await new Actor().save(req.body, {
             transacting: trx,
             method: 'insert'
         })).get('id');
+
+        if(movies !== undefined){
+            let movieIds;
+            movieIds = movies.map((movie: any) => movie.id);
+            for(let i = 0; i < movieIds.length; i++){
+                if(!await checkIfMovieExists(movieIds[i])){
+                    movieIds.splice(i, 1);
+                }
+            }
+            await new Actor({id}).movies().attach(movieIds, {transacting: trx});
+        }
     });
 
-    const entry = await new Actor({id}).fetch();
+    const entry = await new Actor({id}).fetch({
+        require: false,
+        withRelated: ['movies', 'actorPhoto']
+    });
     res.json(entry);
 };
 
 async function checkIfMovieExists(id: number){
-    const find = await new Actor({id}).fetch({require: false});
+    const find = await new Movie({id}).fetch({require: false});
     if(!find){
         return false;
     }
@@ -86,34 +104,34 @@ export const updateActor = async (req: express.Request, res: express.Response) =
     let recentPhotoId: number;
     const finalMovieIds: any[] = [];
     await knex.transaction(async trx => {
-        const movie = await new Actor({id: req.params.id}).fetch({
+        const actor = await new Actor({id: req.params.id}).fetch({
             require: false,
             withRelated: ['movies', 'actorPhoto']
         });
-        if(req.body.categories !== undefined){
-            const updatedMovieIds = req.body.categories.map((cat: any) => cat.id);
-            const oldMovieIds = await Promise.all(movie.related('movies').toJSON().map((category: any) => category.id));
-            await movie.movies().detach(oldMovieIds, {transacting: trx});
+        if(req.body.movies !== undefined){
+            const updatedMovieIds = req.body.movies.map((m: any) => m.id);
+            const oldMovieIds = await Promise.all(actor.related('movies').toJSON().map((mov: any) => mov.id));
+            await actor.movies().detach(oldMovieIds, {transacting: trx});
             for(const updatedMovieId of updatedMovieIds){
                 if(await checkIfMovieExists(updatedMovieId)){
                     finalMovieIds.push(updatedMovieId);
                 }
             }
-            await movie.movies().attach(finalMovieIds, {transacting: trx});
+            await actor.movies().attach(finalMovieIds, {transacting: trx});
             delete req.body.categories;
         }
 
-        let oldPosterPath;
+        let oldPhotoPath;
 
         if(req.file){
 
-            oldPosterPath = movie.related('actorPhoto').get('relativePath');
+            oldPhotoPath = actor.related('actorPhoto').get('relativePath');
 
             req.body.recentPhotoId = null;
-            await movie.save(req.body, {transacting: trx, method: 'update'});
+            await actor.save(req.body, {transacting: trx, method: 'update'});
 
-            if(oldPosterPath){
-                await movie.actorPhoto().where({id: movie.related('actorPhoto').get('id')}).destroy({transacting: trx});
+            if(oldPhotoPath){
+                await actor.actorPhoto().where({id: actor.related('actorPhoto').get('id')}).destroy({transacting: trx});
             }
 
             const photo = {
@@ -130,19 +148,19 @@ export const updateActor = async (req: express.Request, res: express.Response) =
             })).get('id');
         }
 
-        await movie.save({recentPhotoId}, {transacting: trx, method: 'update'});
+        await actor.save({recentPhotoId}, {transacting: trx, method: 'update'});
 
-        if(oldPosterPath !== req.file.path){
-            await deleteFile(oldPosterPath);
+        if(oldPhotoPath && oldPhotoPath !== req.file.path){
+            await deleteFile(oldPhotoPath);
         }
     });
 
-    const updatedMovie = await new Actor({id: req.params.id}).fetch({
+    const updatedActor = await new Actor({id: req.params.id}).fetch({
         require: false,
         withRelated: ['movies', 'actorPhoto']
     });
 
-    res.json(updatedMovie);
+    res.json(updatedActor);
 };
 
 async function checkIfActorExists(id: number){

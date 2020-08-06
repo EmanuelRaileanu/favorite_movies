@@ -6,4 +6,4 @@ export const knex = Knex(config.development);
 
 export const bookshelf = Bookshelf(knex);
 
-
+bookshelf.plugin('bookshelf-virtuals-plugin');
