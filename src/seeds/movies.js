@@ -249,4 +249,43 @@ exports.seed = async function(knex) {
     }
   }
 
+  async function checkUniqueNationalityEntry(entry){
+    const find = await Knex('nationalities').where({ nationality: entry.nationality }).first();
+    if(!find){
+      return true;
+    }
+    return false;
+  }
+
+  const actorNationalitySeed = [
+    {
+      nationality: 'American'
+    },
+    {
+      nationality: 'Australian'
+    },
+    {
+      nationality:  'Canadian'
+    },
+    {
+      nationality:  'Romanian'
+    },
+    {
+      nationality: 'Irish'
+    },
+    {
+      nationality: 'Spanish'
+    },
+    {
+      nationality: 'Italian'
+    },
+    {
+      nationality: 'Other'
+    }
+  ];
+
+  for(const nationality of actorNationalitySeed){
+    await Knex('nationalities').insert(nationality);
+  }
+
 };

@@ -5,13 +5,16 @@ import util from 'util';
 import { Actor } from '../entities/actors';
 import { File } from '../entities/files';
 import { Movie } from '../entities/movies';
+import { Nationality } from '../entities/nationality';
+import { Award } from '../entities/awards';
+import { Studies } from '../entities/studies';
 
 const deleteFile = util.promisify(fs.unlink);
 
 export const getActors = async (req: express.Request, res: express.Response) => {
     const actors = await new Actor().fetchAll({
         require: false,
-        withRelated: ['movies', 'actorPhoto']
+        withRelated: ['movies', 'actorPhoto', 'nationality', 'awards', 'studies']
     });
 
     if(!actors){
@@ -25,7 +28,7 @@ export const getActors = async (req: express.Request, res: express.Response) => 
 export const getActorById = async (req: express.Request, res: express.Response) => {
     const actor = await new Actor({id: req.params.id}).fetch({
         require: false,
-        withRelated: ['movies', 'actorPhoto']
+        withRelated: ['movies', 'actorPhoto', 'nationality', 'awards', 'studies']
     });
 
     if(!actor){
@@ -62,8 +65,28 @@ export const postActor = async (req: express.Request, res: express.Response) => 
         const movies = req.body.movies;
         delete req.body.movies;
 
-        req.body.recentPhotoId = imageId;
-        id = (await new Actor().save(req.body, {
+        if(req.body.nationality !== undefined){
+            await new Nationality().save(req.body.nationality, {transacting: trx,});
+        }
+        if(req.body.studies !== undefined){
+            const studiesIds = req.body.studies.map((s: any) => s.id);
+            await new Actor().studies().attach(studiesIds, {transacting: trx});
+        }
+        if(req.body.awards !== undefined){
+            const awardsIds = req.body.awards.map((award: any) => award.id);
+            await new Actor().awards().attach(awardsIds, {transacting: trx});
+        }
+
+        const actor = {
+            firstName: req.body.firstName,
+            lastName: req.body.lastname,
+            age: req.body.age,
+            fbProfileLink: req.body.fbProfileLink,
+            shortDescription: req.body.shortDescription,
+            recentPhotoId: imageId
+        };
+
+        id = (await new Actor().save(actor, {
             transacting: trx,
             method: 'insert'
         })).get('id');
