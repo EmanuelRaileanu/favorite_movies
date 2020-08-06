@@ -3,7 +3,7 @@ import { knex } from '../utilities/knexconfig';
 import fs from 'fs';
 import util from 'util';
 import { Actor } from '../entities/actors';
-import { ActorPhoto } from '../entities/actor_photos';
+import { File } from '../entities/files';
 import { Movie } from '../entities/movies';
 
 const deleteFile = util.promisify(fs.unlink);
@@ -53,7 +53,7 @@ export const postActor = async (req: express.Request, res: express.Response) => 
                 size: req.file.size,
                 fileName: req.file.filename
             };
-            imageId = (await new ActorPhoto().save(image, {
+            imageId = (await new File().save(image, {
                 transacting: trx,
                 method: 'insert'
             })).get('id');
@@ -142,7 +142,7 @@ export const updateActor = async (req: express.Request, res: express.Response) =
                 fileName: req.file.filename
             };
 
-            recentPhotoId = (await new ActorPhoto().save(photo, {
+            recentPhotoId = (await new File().save(photo, {
                 transacting: trx,
                 method: 'insert'
             })).get('id');

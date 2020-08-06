@@ -1,5 +1,5 @@
 import { bookshelf } from '../utilities/knexconfig';
-import { ActorPhoto } from './actor_photos';
+import { File } from './files';
 import { Movie } from './movies';
 
 export class Actor extends bookshelf.Model<Actor>{
@@ -9,7 +9,7 @@ export class Actor extends bookshelf.Model<Actor>{
 
     // one-to-one relationship with ActorPhoto
     actorPhoto(){
-        return this.hasOne(ActorPhoto, 'id', 'recentPhotoId');
+        return this.hasOne(File, 'id', 'recentPhotoId');
     }
 
     // many-to-many relationship with Movie
