@@ -3,7 +3,7 @@ import { File } from './files';
 import { Movie } from './movies';
 import { Studies } from './studies';
 import { Award } from './awards';
-import { Nationality } from './nationality';
+import { Nationality } from './nationalities';
 
 export class Actor extends bookshelf.Model<Actor>{
     get tableName(){

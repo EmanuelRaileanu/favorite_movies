@@ -5,19 +5,19 @@ import util from 'util';
 import { Actor } from '../entities/actors';
 import { File } from '../entities/files';
 import { Movie } from '../entities/movies';
-import { Nationality } from '../entities/nationality';
 import { Award } from '../entities/awards';
 import { Studies } from '../entities/studies';
+import { Nationality } from '../entities/nationalities';
 
 const deleteFile = util.promisify(fs.unlink);
 
 export const getActors = async (req: express.Request, res: express.Response) => {
     const actors = await new Actor().fetchAll({
         require: false,
-        withRelated: ['movies', 'actorPhoto', 'nationality', 'awards', 'studies']
+        withRelated: ['nationality', 'awards', 'studies', 'movies', 'actorPhoto']
     });
 
-    if(!actors){
+    if(!actors.length){
         res.status(404).json('Page not found');
         return;
     }
@@ -28,7 +28,7 @@ export const getActors = async (req: express.Request, res: express.Response) => 
 export const getActorById = async (req: express.Request, res: express.Response) => {
     const actor = await new Actor({id: req.params.id}).fetch({
         require: false,
-        withRelated: ['movies', 'actorPhoto', 'nationality', 'awards', 'studies']
+        withRelated: ['nationality', 'awards', 'studies', 'movies', 'actorPhoto']
     });
 
     if(!actor){
@@ -38,6 +38,10 @@ export const getActorById = async (req: express.Request, res: express.Response) 
 
     res.json(actor);
 };
+
+async function  getNationalityId(nationality: string){
+    return await (await new Nationality({nationality}).fetch({require: false})).get('id');
+}
 
 export const postActor = async (req: express.Request, res: express.Response) => {
     if(!req.body.firstName || !req.body.lastName){
@@ -65,31 +69,39 @@ export const postActor = async (req: express.Request, res: express.Response) => 
         const movies = req.body.movies;
         delete req.body.movies;
 
-        if(req.body.nationality !== undefined){
-            await new Nationality().save(req.body.nationality, {transacting: trx,});
-        }
-        if(req.body.studies !== undefined){
-            const studiesIds = req.body.studies.map((s: any) => s.id);
-            await new Actor().studies().attach(studiesIds, {transacting: trx});
-        }
-        if(req.body.awards !== undefined){
-            const awardsIds = req.body.awards.map((award: any) => award.id);
-            await new Actor().awards().attach(awardsIds, {transacting: trx});
-        }
-
         const actor = {
             firstName: req.body.firstName,
-            lastName: req.body.lastname,
+            lastName: req.body.lastName,
             age: req.body.age,
             fbProfileLink: req.body.fbProfileLink,
             shortDescription: req.body.shortDescription,
-            recentPhotoId: imageId
+            recentPhotoId: imageId,
+            nationalityId: await getNationalityId(String(req.body.nationality)) || await getNationalityId('Other')
         };
 
         id = (await new Actor().save(actor, {
             transacting: trx,
             method: 'insert'
         })).get('id');
+
+        if(req.body.studies !== undefined){
+            for(const elem of req.body.studies){
+                elem.actorId = id;
+                await new Studies().save(elem, {
+                    transacting: trx,
+                    method: 'insert'
+                });
+            }
+        }
+        if(req.body.awards !== undefined){
+            for(const award of req.body.awards){
+                award.actorId = id;
+                await new Award().save(award, {
+                    transacting: trx,
+                    method: 'insert'
+                });
+            }
+        }
 
         if(movies !== undefined){
             let movieIds;
@@ -105,13 +117,21 @@ export const postActor = async (req: express.Request, res: express.Response) => 
 
     const entry = await new Actor({id}).fetch({
         require: false,
-        withRelated: ['movies', 'actorPhoto']
+        withRelated: ['nationality', 'awards', 'studies', 'movies', 'actorPhoto']
     });
     res.json(entry);
 };
 
 async function checkIfMovieExists(id: number){
     const find = await new Movie({id}).fetch({require: false});
+    if(!find){
+        return false;
+    }
+    return true;
+}
+
+async function checkIfNationalityExists(nationality: string){
+    const find = await new Nationality({nationality}).fetch({require: false});
     if(!find){
         return false;
     }
@@ -129,7 +149,7 @@ export const updateActor = async (req: express.Request, res: express.Response) =
     await knex.transaction(async trx => {
         const actor = await new Actor({id: req.params.id}).fetch({
             require: false,
-            withRelated: ['movies', 'actorPhoto']
+            withRelated: ['nationality', 'awards', 'studies', 'movies', 'actorPhoto']
         });
         if(req.body.movies !== undefined){
             const updatedMovieIds = req.body.movies.map((m: any) => m.id);
@@ -141,17 +161,48 @@ export const updateActor = async (req: express.Request, res: express.Response) =
                 }
             }
             await actor.movies().attach(finalMovieIds, {transacting: trx});
-            delete req.body.categories;
+            delete req.body.movies;
         }
 
-        let oldPhotoPath;
+        if(req.body.nationality !== undefined){
+            if(await checkIfNationalityExists(req.body.nationality)){
+                req.body.nationalityId = await getNationalityId(req.body.nationality);
+            }
+            delete req.body.nationality;
+        }
 
+
+        if(req.body.studies !== undefined){
+            const oldStudiesIds: number[] = await Promise.all(actor.related('studies').toJSON().map(async (s: any) => s.id, 10));
+            for(const elem of oldStudiesIds){
+                await new Studies().where({id: elem}).destroy({transacting: trx});
+            }
+            for(const s of req.body.studies){
+                s.actorId = req.params.id;
+                await new Studies().save(s, {transacting: trx, method: 'insert'});
+            }
+            delete req.body.studies;
+        }
+
+        if(req.body.awards !== undefined){
+            const oldAwardsIds: number[] = await Promise.all(actor.related('awards').toJSON().map(async (award: any) => award.id));
+            for(const oldAwardId of oldAwardsIds){
+                await new Award().where({id: oldAwardId}).destroy({transacting: trx});
+            }
+            for(const award of req.body.awards){
+                award.actorId = req.params.id;
+                await new Award().save(award, {transacting: trx, method: 'insert'});
+            }
+            delete req.body.awards;
+        }
+
+        req.body.recentPhotoId = null;
+        await actor.save(req.body, {transacting: trx, method: 'update'});
+
+        let oldPhotoPath;
         if(req.file){
 
             oldPhotoPath = actor.related('actorPhoto').get('relativePath');
-
-            req.body.recentPhotoId = null;
-            await actor.save(req.body, {transacting: trx, method: 'update'});
 
             if(oldPhotoPath){
                 await actor.actorPhoto().where({id: actor.related('actorPhoto').get('id')}).destroy({transacting: trx});
@@ -180,7 +231,7 @@ export const updateActor = async (req: express.Request, res: express.Response) =
 
     const updatedActor = await new Actor({id: req.params.id}).fetch({
         require: false,
-        withRelated: ['movies', 'actorPhoto']
+        withRelated: ['nationality', 'awards', 'studies', 'movies', 'actorPhoto']
     });
 
     res.json(updatedActor);
@@ -203,12 +254,21 @@ export const deleteActor = async (req: express.Request, res: express.Response) =
     await knex.transaction(async trx => {
         const actor = await new Actor({id: req.params.id}).fetch({
             require: false,
-            withRelated: ['movies', 'actorPhoto']
+            withRelated: ['nationality', 'awards', 'studies', 'movies', 'actorPhoto']
         });
         const oldMovieIds = await Promise.all(actor.related('movies').toJSON().map((movie: any) => movie.id));
         await actor.movies().detach(oldMovieIds, {transacting: trx});
 
+        await Promise.all(actor.related('studies').toJSON().map(async (s: any) => {
+            await new Studies().where({id: s.id}).destroy({transacting: trx});
+        }));
+
+        await Promise.all(await actor.related('awards').toJSON().map(async (award: any) => {
+            await new Award().where({id: award.id}).destroy({transacting: trx});
+        }));
+
         await actor.where({id:req.params.id}).destroy({transacting: trx});
+
         if((await new Actor({id: req.params.id}).fetch()).get('recentPhotoId')){
             await actor.actorPhoto().where({id: actor.related('actorPhoto').get('id')}).destroy({transacting: trx});
             await deleteFile(await actor.related('actorPhoto').get('relativePath'));
