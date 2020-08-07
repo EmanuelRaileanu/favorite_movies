@@ -14,7 +14,7 @@ export const paginate = async (table: string, page: number, pageSize: number, le
 
     const rows = (await new Movie().fetchAll({
         require:false,
-        withRelated: ['productionCompany', 'categories', 'poster', 'actors', 'actors.nationality','actors.awards', 'actors.awards.award', 'actors.studies', 'actors.studies.institution', 'actors.studies.degree']
+        withRelated: ['productionCompany', 'categories', 'poster', 'actors', 'actors.nationality', 'actors.actorPhoto','actors.awards', 'actors.awards.award', 'actors.studies', 'actors.studies.institution', 'actors.studies.degree']
     })).toJSON();
 
     const pagination = {
