@@ -52,6 +52,38 @@ async function getCategoryId(category){
   return (await Knex.from('movie_categories').where({category: category}).first()).id;
 }
 
+async function checkUniqueNationality(nationality){
+  const find = await Knex.from('nationalities').where({ nationality }).first();
+  if(!find){
+    return true;
+  }
+  return false;
+}
+
+async function checkUniqueInstitution(institution){
+  const find = await Knex.from('institutions').where({ institution }).first();
+  if(!find){
+    return true;
+  }
+  return false;
+}
+
+async function checkUniqueDegree(degree){
+  const find = await Knex.from('degrees').where({ degree }).first();
+  if(!find){
+    return true;
+  }
+  return false;
+}
+
+async function checkUniqueAward(awardName){
+  const find = await Knex.from('award_list').where({ awardName }).first();
+  if(!find){
+    return true;
+  }
+  return false;
+}
+
 exports.seed = async function(knex) {
 
   const productionCompanies = {
@@ -246,6 +278,113 @@ exports.seed = async function(knex) {
         };
       }while(!await checkUniqueMovieCategoryEntry(entry));
       await Knex('movies_movie_categories').insert(entry);
+    }
+  }
+
+  async function checkUniqueNationalityEntry(entry){
+    const find = await Knex('nationalities').where({ nationality: entry.nationality }).first();
+    if(!find){
+      return true;
+    }
+    return false;
+  }
+
+  const actorNationalitySeed = [
+    {
+      nationality: 'American'
+    },
+    {
+      nationality: 'Australian'
+    },
+    {
+      nationality:  'Canadian'
+    },
+    {
+      nationality:  'Romanian'
+    },
+    {
+      nationality: 'Irish'
+    },
+    {
+      nationality: 'Spanish'
+    },
+    {
+      nationality: 'Italian'
+    },
+    {
+      nationality: 'Other'
+    }
+  ];
+
+  for(const nationality of actorNationalitySeed){
+    if(await checkUniqueNationality(nationality.nationality)){
+      await Knex('nationalities').insert(nationality);
+    }
+  }
+
+  const institutionsSeed = [
+    {
+      institution: 'Princeton University'
+    },
+    {
+      institution: 'Harvard University'
+    },
+    {
+      institution: 'Columbia University'
+    },
+    {
+      institution: 'Massachusets Institute of Technology'
+    },
+    {
+      institution: 'Yale University'
+    }
+  ];
+
+  for(const institution of institutionsSeed){
+    if(await checkUniqueInstitution(institution.institution)){
+      await Knex('institutions').insert(institution);
+    }
+  }
+
+  const degreesSeed = [
+    {
+      degree: 'Associate degree'
+    },
+    {
+      degree: "Bachelor's degree"
+    },
+    {
+      degree: "Master's degree"
+    },
+    {
+      degree: "Doctoral degree"
+    }
+  ];
+
+  for(const degree of degreesSeed){
+    if(await checkUniqueDegree(degree.degree)){
+      await Knex('degrees').insert(degree);
+    }
+  }
+
+  const awardListSeed = [
+    {
+      awardName: 'The Oscars'
+    },
+    {
+      awardName: 'Golden Globes'
+    },
+    {
+      awardName: 'Filmfare Awards'
+    },
+    {
+      awardName: 'Bafta Awards'
+    }
+  ];
+
+  for(const award of awardListSeed){
+    if(await checkUniqueAward(award.awardName)){
+      await Knex('award_list').insert(award);
     }
   }
 

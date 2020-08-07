@@ -14,19 +14,8 @@ export const paginate = async (table: string, page: number, pageSize: number, le
 
     const rows = (await new Movie().fetchAll({
         require:false,
-        withRelated: ['productionCompany', 'categories', 'poster']
+        withRelated: ['productionCompany', 'categories', 'poster', 'actors', 'actors.nationality', 'actors.actorPhoto','actors.awards', 'actors.awards.award', 'actors.studies', 'actors.studies.institution', 'actors.studies.degree']
     })).toJSON();
-
-    /*const rows = await Promise.all(query.map(async movie => {
-        movie.attributes.ProductionCompanyName = await movie.related('productionCompanies').get('name');
-        movie.attributes.categories = await movie.related('categories').toJSON().map((c: any) => {
-            return {
-                id: c.id,
-                name: c.category
-            };
-        });
-        return movie.attributes;
-    }));*/
 
     const pagination = {
         page,

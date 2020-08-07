@@ -22,9 +22,7 @@ export const getMovies = async (req: express.Request, res: express.Response) => 
         return;
     }
 
-    if(result){
-        res.json(result);
-    }
+    res.json(result);
 };
 
 export const getMovieCategories = async (req: express.Request, res: express.Response) => {
@@ -33,10 +31,10 @@ export const getMovieCategories = async (req: express.Request, res: express.Resp
 };
 
 export const getMovieById = async (req: express.Request, res: express.Response) => {
-    const movie = (await new Movie({id:req.params.id}).fetch({
+    const movie = await new Movie({id:req.params.id}).fetch({
         require:false,
-        withRelated: ['productionCompany', 'categories', 'poster']
-    }));
+        withRelated: ['productionCompany', 'categories', 'poster', 'actors', 'actors.nationality', 'actors.actorPhoto','actors.awards', 'actors.awards.award', 'actors.studies', 'actors.studies.institution', 'actors.studies.degree']
+    });
 
     if(!movie){
         res.status(404).json('Movie not found');
@@ -73,7 +71,9 @@ export const postMovie = async (req: express.Request, res: express.Response) => 
                 fileName: req.file.filename
             };
 
-            posterId = (await new File().save(poster, {transacting: trx, method: 'insert'})).get('id');
+            posterId = (await new File().save(poster, {
+                transacting: trx, method: 'insert'
+            })).get('id');
         }
 
         const movie: any = {
@@ -103,7 +103,7 @@ export const postMovie = async (req: express.Request, res: express.Response) => 
 
     const newEntry = (await new Movie({id}).fetch({
         require: false,
-        withRelated: ['productionCompany', 'categories']
+        withRelated: ['productionCompany', 'categories', 'poster', 'actors', 'actors.nationality', 'actors.actorPhoto','actors.awards', 'actors.awards.award', 'actors.studies', 'actors.studies.institution', 'actors.studies.degree']
     })).toJSON();
 
     res.json(newEntry);
@@ -119,7 +119,7 @@ async function checkIfMovieExists(id: number){
 
 export const updateMovie = async (req: express.Request, res: express.Response) => {
     if(!await checkIfMovieExists(parseInt(req.params.id, 10))){
-        res.send(`Canot update movie with id ${req.params.id} because it does not exist in the database`);
+        res.json(`Canot update movie with id ${req.params.id} because it does not exist in the database`);
         return;
     }
 
@@ -128,7 +128,7 @@ export const updateMovie = async (req: express.Request, res: express.Response) =
     await knex.transaction(async trx => {
         const movie = await new Movie({id: req.params.id}).fetch({
             require: false,
-            withRelated: ['categories', 'poster']
+            withRelated: ['productionCompany', 'categories', 'poster', 'actors', 'actors.nationality', 'actors.actorPhoto','actors.awards', 'actors.awards.award', 'actors.studies', 'actors.studies.institution', 'actors.studies.degree']
         });
         if(req.body.categories !== undefined){
             const updatedCategoryIds = req.body.categories.map((cat: any) => cat.id);
@@ -173,14 +173,14 @@ export const updateMovie = async (req: express.Request, res: express.Response) =
 
         await movie.save({posterId}, {transacting: trx, method: 'update'});
 
-        if(oldPosterPath !== req.file.path){
+        if(oldPosterPath && oldPosterPath !== req.file.path){
             await deleteFile(oldPosterPath);
         }
     });
 
     const updatedMovie = (await new Movie({id: req.params.id}).fetch({
         require: false,
-        withRelated: ['productionCompany', 'categories']
+        withRelated: ['productionCompany', 'categories', 'poster', 'actors', 'actors.nationality', 'actors.actorPhoto','actors.awards', 'actors.awards.award', 'actors.studies', 'actors.studies.institution', 'actors.studies.degree']
     })).toJSON();
 
     res.json(updatedMovie);
@@ -194,7 +194,7 @@ export const deleteMovie = async (req: express.Request, res: express.Response) =
     await knex.transaction(async trx => {
         const movie = await new Movie({id: req.params.id}).fetch({
             require: false,
-            withRelated: ['categories', 'poster']
+            withRelated: ['productionCompany', 'categories', 'poster', 'actors', 'actors.nationality', 'actors.actorPhoto','actors.awards', 'actors.awards.award', 'actors.studies', 'actors.studies.institution', 'actors.studies.degree']
         });
         const oldCategoryIds = await Promise.all(movie.related('categories').toJSON().map((category: any) => category.id));
         await movie.categories().detach(oldCategoryIds, {transacting: trx});
