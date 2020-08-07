@@ -76,6 +76,14 @@ async function checkUniqueDegree(degree){
   return false;
 }
 
+async function checkUniqueAward(awardName){
+  const find = await Knex.from('award_list').where({ awardName }).first();
+  if(!find){
+    return true;
+  }
+  return false;
+}
+
 exports.seed = async function(knex) {
 
   const productionCompanies = {
@@ -356,6 +364,27 @@ exports.seed = async function(knex) {
   for(const degree of degreesSeed){
     if(await checkUniqueDegree(degree.degree)){
       await Knex('degrees').insert(degree);
+    }
+  }
+
+  const awardListSeed = [
+    {
+      awardName: 'The Oscars'
+    },
+    {
+      awardName: 'Golden Globes'
+    },
+    {
+      awardName: 'Filmfare Awards'
+    },
+    {
+      awardName: 'Bafta Awards'
+    }
+  ];
+
+  for(const award of awardListSeed){
+    if(await checkUniqueAward(award.awardName)){
+      await Knex('award_list').insert(award);
     }
   }
 
