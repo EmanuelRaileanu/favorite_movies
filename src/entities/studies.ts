@@ -1,5 +1,7 @@
 import { bookshelf } from '../utilities/knexconfig';
 import { Actor } from './actors';
+import { Institution } from './institutions';
+import { Degree } from './degrees';
 
 export class Studies extends bookshelf.Model<Studies>{
     get tableName(){
@@ -9,5 +11,15 @@ export class Studies extends bookshelf.Model<Studies>{
     // one-to-many relationship with Actor
     actor(){
         return this.belongsTo(Actor, 'actorId', 'id');
+    }
+
+    // one-to-many relationship with Institution
+    institutions(){
+        return this.belongsTo(Institution, 'institutionId', 'id');
+    }
+
+    // one-to-many relationship with Degree
+    degrees(){
+        return this.belongsTo(Degree, 'degreeId', 'id');
     }
 }
