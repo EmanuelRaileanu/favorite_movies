@@ -14,12 +14,12 @@ export class Studies extends bookshelf.Model<Studies>{
     }
 
     // one-to-many relationship with Institution
-    institutions(){
+    institution(){
         return this.belongsTo(Institution, 'institutionId', 'id');
     }
 
     // one-to-many relationship with Degree
-    degrees(){
+    degree(){
         return this.belongsTo(Degree, 'degreeId', 'id');
     }
 }

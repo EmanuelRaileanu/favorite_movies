@@ -13,7 +13,7 @@ export class Award extends bookshelf.Model<Award>{
     }
 
     // one-to-many relationship with AwardName
-    awardName(){
+    award(){
         return this.belongsTo(AwardName, 'awardId', 'id');
     }
 }

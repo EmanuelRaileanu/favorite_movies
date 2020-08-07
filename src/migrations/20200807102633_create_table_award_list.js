@@ -1,5 +1,3 @@
-const { table } = require("console");
-
 exports.up = function(knex) {
     return knex.schema.createTable('award_list', table => {
         table.increments('id').primary();
