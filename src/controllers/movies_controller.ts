@@ -35,8 +35,9 @@ export const getMovieCategories = async (req: express.Request, res: express.Resp
 export const getMovieById = async (req: express.Request, res: express.Response) => {
     const movie = await new Movie({id:req.params.id}).fetch({
         require:false,
-        withRelated: ['productionCompany', 'categories', 'poster', 'movieScenes', 'movieScenes.movieSet', 'movieScenes.movieSet.address', 'actors', 'actors.nationality', 'actors.actorPhoto','actors.awards', 
-        'actors.awards.award', 'actors.studies', 'actors.studies.institution', 'actors.studies.degree', 'productionCrew', 'productionCrew.address',
+        withRelated: ['productionCompany', 'categories', 'poster', 'movieScenes', 'movieScenes.movieSet', 'movieScenes.movieSet.address', 
+        'movieScenes.movieSet.address.street', 'actors', 'actors.nationality', 'actors.actorPhoto','actors.awards', 'actors.awards.award', 'actors.studies', 
+        'actors.studies.institution', 'actors.studies.degree', 'productionCrew', 'productionCrew.address',
         'productionCrew.address.street', 'productionCrew.address.street.location', 'productionCrew.address.street.location.country', 
         'productionCrew.productionCrewType']
     });
@@ -100,7 +101,11 @@ export const postMovie = async (req: express.Request, res: express.Response) => 
 
     const newEntry = await (await new Movie({id}).fetch({
         require: false,
-        withRelated: ['productionCompany', 'categories', 'poster', 'actors', 'actors.nationality', 'actors.actorPhoto','actors.awards', 'actors.awards.award', 'actors.studies', 'actors.studies.institution', 'actors.studies.degree']
+        withRelated: ['productionCompany', 'categories', 'poster', 'movieScenes', 'movieScenes.movieSet', 'movieScenes.movieSet.address', 
+        'movieScenes.movieSet.address.street', 'actors', 'actors.nationality', 'actors.actorPhoto','actors.awards', 'actors.awards.award', 'actors.studies', 
+        'actors.studies.institution', 'actors.studies.degree', 'productionCrew', 'productionCrew.address',
+        'productionCrew.address.street', 'productionCrew.address.street.location', 'productionCrew.address.street.location.country', 
+        'productionCrew.productionCrewType']
     })).toJSON();
 
     res.json(newEntry);
@@ -117,7 +122,11 @@ export const updateMovie = async (req: express.Request, res: express.Response) =
     await knex.transaction(async trx => {
         const movie = await new Movie({id: req.params.id}).fetch({
             require: false,
-            withRelated: ['productionCompany', 'categories', 'poster', 'actors', 'actors.nationality', 'actors.actorPhoto','actors.awards', 'actors.awards.award', 'actors.studies', 'actors.studies.institution', 'actors.studies.degree']
+            withRelated: ['productionCompany', 'categories', 'poster', 'movieScenes', 'movieScenes.movieSet', 'movieScenes.movieSet.address', 
+            'movieScenes.movieSet.address.street', 'actors', 'actors.nationality', 'actors.actorPhoto','actors.awards', 'actors.awards.award', 'actors.studies', 
+            'actors.studies.institution', 'actors.studies.degree', 'productionCrew', 'productionCrew.address',
+            'productionCrew.address.street', 'productionCrew.address.street.location', 'productionCrew.address.street.location.country', 
+            'productionCrew.productionCrewType']
         });
         if(req.body.categories !== undefined){
             const updatedCategoryIds = req.body.categories.map((category: type.Category) => category.id);
@@ -168,7 +177,11 @@ export const updateMovie = async (req: express.Request, res: express.Response) =
 
     const updatedMovie = (await new Movie({id: req.params.id}).fetch({
         require: false,
-        withRelated: ['productionCompany', 'categories', 'poster', 'actors', 'actors.nationality', 'actors.actorPhoto','actors.awards', 'actors.awards.award', 'actors.studies', 'actors.studies.institution', 'actors.studies.degree']
+        withRelated: ['productionCompany', 'categories', 'poster', 'movieScenes', 'movieScenes.movieSet', 'movieScenes.movieSet.address', 
+        'movieScenes.movieSet.address.street', 'actors', 'actors.nationality', 'actors.actorPhoto','actors.awards', 'actors.awards.award', 'actors.studies', 
+        'actors.studies.institution', 'actors.studies.degree', 'productionCrew', 'productionCrew.address',
+        'productionCrew.address.street', 'productionCrew.address.street.location', 'productionCrew.address.street.location.country', 
+        'productionCrew.productionCrewType']
     })).toJSON();
 
     res.json(updatedMovie);
@@ -182,7 +195,11 @@ export const deleteMovie = async (req: express.Request, res: express.Response) =
     await knex.transaction(async trx => {
         const movie = await new Movie({id: req.params.id}).fetch({
             require: false,
-            withRelated: ['productionCompany', 'categories', 'poster', 'actors', 'actors.nationality', 'actors.actorPhoto','actors.awards', 'actors.awards.award', 'actors.studies', 'actors.studies.institution', 'actors.studies.degree']
+            withRelated: ['productionCompany', 'categories', 'poster', 'movieScenes', 'movieScenes.movieSet', 'movieScenes.movieSet.address', 
+            'movieScenes.movieSet.address.street', 'actors', 'actors.nationality', 'actors.actorPhoto','actors.awards', 'actors.awards.award', 'actors.studies', 
+            'actors.studies.institution', 'actors.studies.degree', 'productionCrew', 'productionCrew.address',
+            'productionCrew.address.street', 'productionCrew.address.street.location', 'productionCrew.address.street.location.country', 
+            'productionCrew.productionCrewType']
         });
         const oldCategoryIds = await Promise.all(movie.related('categories').toJSON().map((category: type.Category) => category.id));
         await movie.categories().detach(oldCategoryIds, {transacting: trx});
