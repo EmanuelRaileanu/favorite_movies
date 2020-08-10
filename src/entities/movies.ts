@@ -3,6 +3,8 @@ import { ProductionCompany } from './production_companies';
 import { MovieCategory } from './movie_categories';
 import { File } from './files';
 import { Actor } from './actors';
+import { MovieScene } from './movie_scenes';
+import { ProductionCrew } from './production_crew';
 
 export class Movie extends bookshelf.Model<Movie>{
 
@@ -30,4 +32,13 @@ export class Movie extends bookshelf.Model<Movie>{
         return this.belongsToMany(Actor, 'movies_actors', 'movieId', 'actorId');
     }
 
+    // one-to-many relationship with MovieScene
+    movieScenes(){
+        return this.hasMany(MovieScene, 'movieId', 'id');
+    }
+
+    // many-to-many relationship with ProductionCrew
+    productionCrew(){
+        return this.belongsToMany(ProductionCrew, 'production_crew_movies', 'movieId', 'productionCrewMemberId');
+    }
 }

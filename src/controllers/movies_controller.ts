@@ -6,16 +6,18 @@ import { MovieCategory } from '../entities/movie_categories';
 import { File } from '../entities/files';
 import fs from 'fs';
 import util from 'util';
+import * as functions from '../utilities/functions';
+import * as type from '../utilities/customTypes';
 
 const deleteFile = util.promisify(fs.unlink);
 
 export const getMovies = async (req: express.Request, res: express.Response) => {
     const reg = new RegExp('^[0-9]+');
     const length = await getLength('movies');
-    const page = parseInt(reg.test(String(req.query.page))? String(req.query.page) : '1', 10) || 1;
-    const pageSize = parseInt(reg.test(String(req.query.pageSize))? String(req.query.pageSize) : '10', 10) || 10;
+    const page = reg.test(String(req.query.page))? parseInt(String(req.query.page), 10) : 1;
+    const pageSize = reg.test(String(req.query.pageSize))? parseInt(String(req.query.pageSize), 10) : 10;
 
-    const result = await paginate('movies', page, pageSize, length);
+    const result = await paginate(page, pageSize, length);
 
     if(result && !result.results.length){
         res.status(404).json('Page not found');
@@ -26,14 +28,17 @@ export const getMovies = async (req: express.Request, res: express.Response) => 
 };
 
 export const getMovieCategories = async (req: express.Request, res: express.Response) => {
-    const rows = (await new MovieCategory().fetchAll()).map(row => row.attributes);
+    const rows = (await new MovieCategory().fetchAll()).toJSON();
     res.json(rows);
 };
 
 export const getMovieById = async (req: express.Request, res: express.Response) => {
     const movie = await new Movie({id:req.params.id}).fetch({
         require:false,
-        withRelated: ['productionCompany', 'categories', 'poster', 'actors', 'actors.nationality', 'actors.actorPhoto','actors.awards', 'actors.awards.award', 'actors.studies', 'actors.studies.institution', 'actors.studies.degree']
+        withRelated: ['productionCompany', 'categories', 'poster', 'movieScenes', 'movieScenes.movieSet', 'movieScenes.movieSet.address', 'actors', 'actors.nationality', 'actors.actorPhoto','actors.awards', 
+        'actors.awards.award', 'actors.studies', 'actors.studies.institution', 'actors.studies.degree', 'productionCrew', 'productionCrew.address',
+        'productionCrew.address.street', 'productionCrew.address.street.location', 'productionCrew.address.street.location.country', 
+        'productionCrew.productionCrewType']
     });
 
     if(!movie){
@@ -44,16 +49,8 @@ export const getMovieById = async (req: express.Request, res: express.Response) 
     res.json(movie);
 };
 
-async function checkIfCategoryExists(categoryId: number){
-    const find = await new MovieCategory({id: categoryId}).fetch({require: false});
-    if(!find){
-        return false;
-    }
-    return true;
-}
-
 export const postMovie = async (req: express.Request, res: express.Response) => {
-    let id;
+    let id: number | undefined;
 
     await knex.transaction(async trx => {
         if(!req.body.title){
@@ -76,7 +73,7 @@ export const postMovie = async (req: express.Request, res: express.Response) => 
             })).get('id');
         }
 
-        const movie: any = {
+        const movie = {
             title: req.body.title,
             description: req.body.description,
             runtime: req.body.runtime,
@@ -93,7 +90,7 @@ export const postMovie = async (req: express.Request, res: express.Response) => 
             let categoryIds;
             categoryIds = (req.body.categories.map((category: any) => category.id));
             for(let i = 0; i < categoryIds.length; i++){
-                if(!await checkIfCategoryExists(categoryIds[i])){
+                if(!await functions.checkIfCategoryExists(categoryIds[i])){
                     categoryIds.splice(i, 1);
                 }
             }
@@ -101,7 +98,7 @@ export const postMovie = async (req: express.Request, res: express.Response) => 
         }
     });
 
-    const newEntry = (await new Movie({id}).fetch({
+    const newEntry = await (await new Movie({id}).fetch({
         require: false,
         withRelated: ['productionCompany', 'categories', 'poster', 'actors', 'actors.nationality', 'actors.actorPhoto','actors.awards', 'actors.awards.award', 'actors.studies', 'actors.studies.institution', 'actors.studies.degree']
     })).toJSON();
@@ -109,33 +106,25 @@ export const postMovie = async (req: express.Request, res: express.Response) => 
     res.json(newEntry);
 };
 
-async function checkIfMovieExists(id: number){
-    const find = await new Movie({id}).fetch();
-    if(!find){
-        return false;
-    }
-    return true;
-}
-
 export const updateMovie = async (req: express.Request, res: express.Response) => {
-    if(!await checkIfMovieExists(parseInt(req.params.id, 10))){
+    if(!await functions.checkIfMovieExists(parseInt(req.params.id, 10))){
         res.json(`Canot update movie with id ${req.params.id} because it does not exist in the database`);
         return;
     }
 
     let posterId: number;
-    const finalCategoryIds: any[] = [];
+    const finalCategoryIds: number[] = [];
     await knex.transaction(async trx => {
         const movie = await new Movie({id: req.params.id}).fetch({
             require: false,
             withRelated: ['productionCompany', 'categories', 'poster', 'actors', 'actors.nationality', 'actors.actorPhoto','actors.awards', 'actors.awards.award', 'actors.studies', 'actors.studies.institution', 'actors.studies.degree']
         });
         if(req.body.categories !== undefined){
-            const updatedCategoryIds = req.body.categories.map((cat: any) => cat.id);
-            const oldCategoryIds = await Promise.all(movie.related('categories').toJSON().map((category: any) => category.id));
+            const updatedCategoryIds = req.body.categories.map((category: type.Category) => category.id);
+            const oldCategoryIds = await Promise.all(movie.related('categories').toJSON().map((category: type.Category) => category.id));
             await movie.categories().detach(oldCategoryIds, {transacting: trx});
             for(const updatedCategoryId of updatedCategoryIds){
-                if(await checkIfCategoryExists(updatedCategoryId)){
+                if(await functions.checkIfCategoryExists(updatedCategoryId)){
                     finalCategoryIds.push(updatedCategoryId);
                 }
             }
@@ -144,7 +133,6 @@ export const updateMovie = async (req: express.Request, res: express.Response) =
         }
 
         let oldPosterPath;
-
         if(req.file){
 
             oldPosterPath = movie.related('poster').get('relativePath');
@@ -187,7 +175,7 @@ export const updateMovie = async (req: express.Request, res: express.Response) =
 };
 
 export const deleteMovie = async (req: express.Request, res: express.Response) => {
-    if(!checkIfMovieExists(parseInt(req.params.id, 10))){
+    if(!functions.checkIfMovieExists(parseInt(req.params.id, 10))){
         res.status(404).json('Movie not found');
         return;
     }
@@ -196,7 +184,7 @@ export const deleteMovie = async (req: express.Request, res: express.Response) =
             require: false,
             withRelated: ['productionCompany', 'categories', 'poster', 'actors', 'actors.nationality', 'actors.actorPhoto','actors.awards', 'actors.awards.award', 'actors.studies', 'actors.studies.institution', 'actors.studies.degree']
         });
-        const oldCategoryIds = await Promise.all(movie.related('categories').toJSON().map((category: any) => category.id));
+        const oldCategoryIds = await Promise.all(movie.related('categories').toJSON().map((category: type.Category) => category.id));
         await movie.categories().detach(oldCategoryIds, {transacting: trx});
 
         await movie.where({id:req.params.id}).destroy({transacting: trx});

@@ -4,6 +4,7 @@ import { Movie } from './movies';
 import { Studies } from './studies';
 import { Award } from './awards';
 import { Nationality } from './nationalities';
+import { MovieScene } from './movie_scenes';
 
 export class Actor extends bookshelf.Model<Actor>{
     get tableName(){
@@ -33,5 +34,10 @@ export class Actor extends bookshelf.Model<Actor>{
     // one-to-many relationship with Nationality
     nationality(){
         return this.belongsTo(Nationality, 'actorId', 'id');
+    }
+
+    // many-to-many relationship wtih MovieScene
+    movieScenes(){
+        return this.belongsToMany(MovieScene, 'actors_movie_scenes', 'actorId', 'sceneId');
     }
 }

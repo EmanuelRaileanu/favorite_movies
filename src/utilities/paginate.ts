@@ -9,7 +9,7 @@ const knex = Knex(config.development);
 
 export const getLength = async (table: string) => parseInt(String((await knex(table).count('id'))[0]['count(`id`)']), 10);
 
-export const paginate = async (table: string, page: number, pageSize: number, length: number) => {
+export const paginate = async (page: number, pageSize: number, length: number) => {
     const pageCount = Math.ceil(length / pageSize);
 
     const rows = (await new Movie().fetchAll({
