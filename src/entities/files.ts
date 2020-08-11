@@ -19,7 +19,7 @@ export class File extends bookshelf.Model<File>{
     }
 
     virtuals: any = {
-        absoluteUrl(){
+        url(){
             return absoluteUrl + this.get('relativePath');
         }
     }

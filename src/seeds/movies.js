@@ -1,7 +1,7 @@
 const dotenv = require('dotenv');
-dotenv.config();
 const config = require('../../knexfile');
 
+dotenv.config();
 const knex = require('knex')(config.development);
 
 async function checkUniqueTitle(movie){
@@ -13,7 +13,7 @@ async function checkUniqueTitle(movie){
 }
 
 async function checkUniqueName(company){
-  const companyName = await knex('production_companies').where({ name: company.name }).first();
+  const companyName = await knex('production_companies').where({ name: company }).first();
   if(!companyName){
     return true;
   }
@@ -117,7 +117,7 @@ async function checkUniqueProductionCrewType(type){
 }
 
 async function checkUniqueProductionCrewMember(name){
-  const find = await knex('production_crew').where(name);
+  const find = await knex('production_crew').where(name).first();
   if(!find){
     return true;
   }
@@ -188,6 +188,38 @@ async function checkUniqueActorAward(award){
   return false;
 }
 
+async function checkUniqueActorMovieScene(entry){
+  const find = await knex('actors_movie_scenes').where(entry).first();
+  if(!find){
+    return true;
+  }
+  return false;
+}
+
+async function checkUniqueLanguage(language){
+  const find = await knex('languages').where({language}).first();
+  if(!find){
+    return true;
+  }
+  return false;
+}
+
+async function checkUniqueMovieLanguageEntry(entry){
+  const find = await knex('movies_languages').where(entry).first();
+  if(!find){
+    return true;
+  }
+  return false;
+}
+
+async function checkUniqueContentRating(rating){
+  const find = await knex('content_ratings').where({rating}).first();
+  if(!find){
+    return true;
+  }
+  return false;
+}
+
 async function getMovieId(title){
   return (await knex('movies').where({title: title}).first()).id;
 }
@@ -244,6 +276,14 @@ async function getDegreeId(degree){
   return (await knex('degrees').where({degree}).first()).id;
 }
 
+async function getLanguageId(language){
+  return (await knex('languages').where({language}).first()).id;
+}
+
+async function getContentRatingId(rating){
+  return (await knex('content_ratings').where({rating}).first()).id;
+}
+
 exports.seed = async function(knex) {
 
   const productionCompanies = {
@@ -253,7 +293,7 @@ exports.seed = async function(knex) {
   };
 
   for(let i =0; i < Object.keys(productionCompanies).length; i++){
-    if(await checkUniqueName(productionCompanies[Object.keys(productionCompanies)[i]])){
+    if(await checkUniqueName(productionCompanies[Object.keys(productionCompanies)[i]].name)){
       let id = await knex('production_companies').insert(productionCompanies[Object.keys(productionCompanies)[i]]);
       productionCompanies[Object.keys(productionCompanies)[i]].id = id;
     }
@@ -268,7 +308,7 @@ exports.seed = async function(knex) {
       budget: 160000000.00,
       gross: 828322032.00,
       overallRating: 8.8,
-      ProductionCompanyId: productionCompanies.other.id
+      ProductionCompanyId: parseInt(productionCompanies.other.id, 10)
     },
     {
       title: 'John Wick',
@@ -278,7 +318,7 @@ exports.seed = async function(knex) {
       budget: 40000000.00,
       gross: 86013056.00,
       overallRating: 7.4,
-      ProductionCompanyId: productionCompanies.summit.id
+      ProductionCompanyId: parseInt(productionCompanies.summit.id, 10)
     },
     {
       title: 'The Lord of the Rings: The Fellowship of the Ring',
@@ -288,7 +328,7 @@ exports.seed = async function(knex) {
       budget: 93000000.00,
       gross: 883726270.00,
       overallRating: 8.8,
-      ProductionCompanyId: productionCompanies.other.id
+      ProductionCompanyId: parseInt(productionCompanies.other.id, 10)
     },
     {
       title: 'Avengers: Infinity War',
@@ -298,7 +338,7 @@ exports.seed = async function(knex) {
       budget: 316000000.00,
       gross: 2048359754.00,
       overallRating: 8.8,
-      ProductionCompanyId: productionCompanies.marvel.id
+      ProductionCompanyId: parseInt(productionCompanies.marvel.id, 10)
     },
     {
       title: 'The Dark Knight',
@@ -308,7 +348,7 @@ exports.seed = async function(knex) {
       budget: 180000000.00,
       gross: 1003045358.00,
       overallRating: 9.0,
-      ProductionCompanyId: productionCompanies.other.id
+      ProductionCompanyId: parseInt(productionCompanies.other.id, 10)
     },
     {
       title: 'The Hobbit: An Unexpected Journey',
@@ -318,7 +358,7 @@ exports.seed = async function(knex) {
       budget: 180000000.00,
       gross: 1017003568.00,
       overallRating: 7.8,
-      ProductionCompanyId: productionCompanies.other.id
+      ProductionCompanyId: parseInt(productionCompanies.other.id, 10)
     },
     {
       title: 'Thor: Ragnarok',
@@ -328,7 +368,7 @@ exports.seed = async function(knex) {
       budget: 180000000.00,
       gross: 853977126.00,
       overallRating: 7.9,
-      ProductionCompanyId: productionCompanies.marvel.id
+      ProductionCompanyId: parseInt(productionCompanies.marvel.id, 10)
     },
     {
       title: 'Interstellar',
@@ -338,7 +378,7 @@ exports.seed = async function(knex) {
       budget: 165000000.00,
       gross: 677463813.00,
       overallRating: 8.6,
-      ProductionCompanyId: productionCompanies.other.id
+      ProductionCompanyId: parseInt(productionCompanies.other.id, 10)
     },
     {
       title: 'The Hangover',
@@ -348,7 +388,7 @@ exports.seed = async function(knex) {
       budget: 35000000.00,
       gross: 468812793.00,
       overallRating: 7.7,
-      ProductionCompanyId: productionCompanies.other.id
+      ProductionCompanyId: parseInt(productionCompanies.other.id, 10)
     },
     {
       title: 'Anchorman: The Legend of Ron Burgundy',
@@ -358,7 +398,7 @@ exports.seed = async function(knex) {
       budget: 26000000.00,
       gross: 90649730.00,
       overallRating: 7.2,
-      ProductionCompanyId: productionCompanies.other.id
+      ProductionCompanyId: parseInt(productionCompanies.other.id, 10)
     }
   ];
 
@@ -368,36 +408,12 @@ exports.seed = async function(knex) {
     }
   }
 
-  const categorySeed = [
-    {
-      category: 'Action'
-    },
-    {
-      category: 'Comedy'
-    },
-    {
-      category: 'Drama'
-    },
-    {
-      category: 'Fantasy'
-    },
-    {
-      category: 'Horror'
-    },
-    {
-      category: 'Mystery'
-    },
-    {
-      category: 'Romance'
-    },
-    {
-      category: 'Thriller'
-    }
-  ];
-
+  const categorySeed = ['Action', 'Comedy', 'Drama', 'Fantasy', 'Horror', 'Mystery', 'Romance', 'Thriller', 'Adventure', 'Family',
+                        'Sci-Fi', 'Crime', 'Historical', 'Historical fiction', 'Horror', 'Magical realism', 'Paranoid fiction', 
+                        'Philosophical', 'Political', 'Urban'];
   for(let i = 0; i < categorySeed.length; i++){
-    if(await checkUniqueCategory(categorySeed[i].category)){
-      await knex('movie_categories').insert(categorySeed[i]);
+    if(await checkUniqueCategory(categorySeed[i])){
+      await knex('movie_categories').insert({ category: categorySeed[i] });
     }
   }
 
@@ -441,102 +457,31 @@ exports.seed = async function(knex) {
     }
   }
 
-  const actorNationalitySeed = [
-    {
-      nationality: 'American'
-    },
-    {
-      nationality: 'Australian'
-    },
-    {
-      nationality:  'Canadian'
-    },
-    {
-      nationality:  'Romanian'
-    },
-    {
-      nationality: 'Irish'
-    },
-    {
-      nationality: 'Spanish'
-    },
-    {
-      nationality: 'Italian'
-    },
-    {
-      nationality: 'Other'
-    }
-  ];
-
+  const actorNationalitySeed = ['American', 'Australian',  'Canadian',  'Romanian', 'Irish', 'Spanish', 'Italian', 'Norwegian', 'Other'];
   for(const nationality of actorNationalitySeed){
-    if(await checkUniqueNationality(nationality.nationality)){
-      await knex('nationalities').insert(nationality);
+    if(await checkUniqueNationality(nationality)){
+      await knex('nationalities').insert({ nationality });
     }
   }
 
-  const institutionsSeed = [
-    {
-      institution: 'Princeton University'
-    },
-    {
-      institution: 'Harvard University'
-    },
-    {
-      institution: 'Columbia University'
-    },
-    {
-      institution: 'Massachusets Institute of Technology'
-    },
-    {
-      institution: 'Yale University'
-    }
-  ];
-
+  const institutionsSeed = ['Princeton University', 'Harvard University', 'Columbia University', 'Massachusets Institute of Technology', 'Yale University'];
   for(const institution of institutionsSeed){
-    if(await checkUniqueInstitution(institution.institution)){
-      await knex('institutions').insert(institution);
+    if(await checkUniqueInstitution(institution)){
+      await knex('institutions').insert({ institution });
     }
   }
 
-  const degreesSeed = [
-    {
-      degree: 'Associate degree'
-    },
-    {
-      degree: "Bachelor's degree"
-    },
-    {
-      degree: "Master's degree"
-    },
-    {
-      degree: "Doctoral degree"
-    }
-  ];
-
+  const degreesSeed = ['Associate degree', "Bachelor's degree", "Master's degree", "Doctoral degree"];
   for(const degree of degreesSeed){
-    if(await checkUniqueDegree(degree.degree)){
-      await knex('degrees').insert(degree);
+    if(await checkUniqueDegree(degree)){
+      await knex('degrees').insert({ degree });
     }
   }
 
-  const awardListSeed = [
-    {
-      awardName: 'The Oscars'
-    },
-    {
-      awardName: 'Golden Globes'
-    },
-    {
-      awardName: 'Filmfare Awards'
-    },
-    {
-      awardName: 'Bafta Awards'
-    }
-  ];
-
-  for(const award of awardListSeed){
-    if(await checkUniqueAward(award.awardName)){
-      await knex('award_list').insert(award);
+  const awardListSeed = ['The Oscars', 'Golden Globes', 'Filmfare Awards', 'Bafta Awards'];
+  for(const awardName of awardListSeed){
+    if(await checkUniqueAward(awardName)){
+      await knex('award_list').insert({ awardName });
     }
   }
 
@@ -671,8 +616,8 @@ exports.seed = async function(knex) {
     }
   }
 
-  const countrySeed = ['US', 'Canada', 'Germany', 'Australia', 'Romania', 'Italy', 'Spain', 'Iceland', 'Norway', 'UK', 'Other'];
-  for(countryName of countrySeed){
+  const countrySeed = ['USA', 'Canada', 'Germany', 'Australia', 'Romania', 'Italy', 'Spain', 'Iceland', 'Norway', 'UK', 'Other'];
+  for(const countryName of countrySeed){
     if(await checkUniqueCountry(countryName)){
       await knex('countries').insert({ countryName });
     }
@@ -786,7 +731,7 @@ exports.seed = async function(knex) {
     }
   }
 
-  const productionCrewTypesSeed = ['Producer', 'Production manger', 'Production accountant', 'Location manager', 'Legal counsel', 
+  const productionCrewTypesSeed = ['Producer', 'Writer', 'Production manger', 'Production accountant', 'Location manager', 'Legal counsel', 
                                   'Script supervisor', 'Director of photography', 'Camera operator', 'Digital imaging techincian',
                                   'Gaffer', 'Key grip', 'Production sound mixer', 'Art director', 'Set decorator', 'Key scenic', 
                                   'Propmaster', 'Costume designer', 'Key make-up artist', 'Special effects supervisor', 'Stunt coordinator',
@@ -799,8 +744,8 @@ exports.seed = async function(knex) {
   
   const productionCrewSeed = [
     {
-      firstName: 'Kevin',
-      lastName: 'Feige',
+      firstName: 'Anthony',
+      lastName: 'Russo',
       dateOfBirth: '1973-06-2',
       addressId: Math.floor(Math.random() * 2 * streetSeed.length) + 1,
       typeId: await getProductionCrewTypeId('Producer'),
@@ -879,7 +824,7 @@ exports.seed = async function(knex) {
 
   const productionCrewMovieScenesSeed = [
     {
-      productionCrewMemberId: await getProductionCrewMemberId({ firstName: 'Kevin', lastName: 'Feige' }),
+      productionCrewMemberId: await getProductionCrewMemberId({ firstName: 'Anthony', lastName: 'Russo' }),
       movieSceneId: await getMovieSceneId('Iron Man Vs Thanos Fight Scene')
     },
     {
@@ -905,14 +850,47 @@ exports.seed = async function(knex) {
     }
   }
 
-  /*const actors_movie_scenes = [
+  const actorsMovieScenesSeed = [
     {
-      actorId: ,
-      sceneId: 
+      actorId: await getActorId({ firstName: 'Chris', lastName: 'Hemsworth' }),
+      sceneId: await getMovieSceneId('Thor Arrives in Wakanda Scene')
     },
     {
-      actorId: ,
-      sceneId: 
+      actorId: await getActorId({ firstName: 'Chris', lastName: 'Evans' }),
+      sceneId: await getMovieSceneId('Thor Arrives in Wakanda Scene')
     },
-  ];*/
+    {
+      actorId: await getActorId({ firstName: 'Keanu', lastName: 'Reeves' }),
+      sceneId: await getMovieSceneId('The Break-In')
+    }
+  ];
+  for(const actorMovieScene of actorsMovieScenesSeed){
+    if(await checkUniqueActorMovieScene(actorMovieScene)){
+      await knex('actors_movie_scenes').insert(actorMovieScene);
+    }
+  }
+
+  const languagesSeed = ['English', 'Spanish', 'Italian', 'German', 'Romanian', 'Russian', 'Mandarin', 'Chinese', 'French', 'Japanese'];
+  for(const language of languagesSeed){
+    if(await checkUniqueLanguage(language)){
+      await knex('languages').insert({ language });
+    }
+  }
+
+  for(let i = 0; i < seed.length; i++){
+    const languageEntry = {
+      movieId: i + 1,
+      languageId: await getLanguageId('English')
+    };
+    if(await checkUniqueMovieLanguageEntry(languageEntry)){
+      await knex('movies_languages').insert(languageEntry);
+    }
+  }
+
+  const constentRatingSeed = ['G', 'PG', 'PG-13', 'R', 'NC-17', 'NR', 'UR'];
+  for(const contentRating of constentRatingSeed){
+    if(await checkUniqueContentRating(contentRating)){
+      await knex('content_ratings').insert({rating: contentRating});
+    }
+  }
 };

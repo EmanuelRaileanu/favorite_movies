@@ -5,8 +5,12 @@ import { File } from './files';
 import { Actor } from './actors';
 import { MovieScene } from './movie_scenes';
 import { ProductionCrew } from './production_crew';
+import { ContentRating } from './content_ratings';
+import { Country } from './countries';
+import { Language } from './languages';
 
 export class Movie extends bookshelf.Model<Movie>{
+    [x: string]: any;
 
     get tableName(){
         return 'movies';
@@ -40,5 +44,20 @@ export class Movie extends bookshelf.Model<Movie>{
     // many-to-many relationship with ProductionCrew
     productionCrew(){
         return this.belongsToMany(ProductionCrew, 'production_crew_movies', 'movieId', 'productionCrewMemberId');
+    }
+
+    // one-to-many relationship with ContentRating
+    rated(){
+        return this.belongsTo(ContentRating, 'contentRatingId', 'id');
+    }
+
+    // one-to-many relationship with Country
+    country(){
+        return this.belongsTo(Country, 'countryId', 'id');
+    }
+
+    // many-to-many relationship with Language
+    languages(){
+        return this.belongsToMany(Language, 'movies_languages', 'movieId', 'languageId');
     }
 }

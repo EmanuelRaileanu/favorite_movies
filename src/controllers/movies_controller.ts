@@ -8,14 +8,15 @@ import fs from 'fs';
 import util from 'util';
 import * as functions from '../utilities/functions';
 import * as type from '../utilities/customTypes';
+import { searchMovieByTitle } from '../utilities/omdbAPIFunctions';
 
 const deleteFile = util.promisify(fs.unlink);
 
 export const getMovies = async (req: express.Request, res: express.Response) => {
     const reg = new RegExp('^[0-9]+');
     const length = await getLength('movies');
-    const page = reg.test(String(req.query.page))? parseInt(String(req.query.page), 10) : 1;
-    const pageSize = reg.test(String(req.query.pageSize))? parseInt(String(req.query.pageSize), 10) : 10;
+    const page = parseInt(reg.test(String(req.query.page))? String(req.query.page) : '1', 10) || 1;
+    const pageSize = parseInt(reg.test(String(req.query.pageSize))? String(req.query.pageSize) : '10', 10) || 10;
 
     const result = await paginate(page, pageSize, length);
 
@@ -35,7 +36,7 @@ export const getMovieCategories = async (req: express.Request, res: express.Resp
 export const getMovieById = async (req: express.Request, res: express.Response) => {
     const movie = await new Movie({id:req.params.id}).fetch({
         require:false,
-        withRelated: ['productionCompany', 'categories', 'poster', 'movieScenes', 'movieScenes.movieSet', 'movieScenes.movieSet.address', 
+        withRelated: ['productionCompany', 'categories', 'poster', 'languages', 'movieScenes', 'movieScenes.movieSet', 'movieScenes.movieSet.address', 
         'movieScenes.movieSet.address.street', 'actors', 'actors.nationality', 'actors.actorPhoto','actors.awards', 'actors.awards.award', 'actors.studies', 
         'actors.studies.institution', 'actors.studies.degree', 'productionCrew', 'productionCrew.address',
         'productionCrew.address.street', 'productionCrew.address.street.location', 'productionCrew.address.street.location.country', 
@@ -101,7 +102,7 @@ export const postMovie = async (req: express.Request, res: express.Response) => 
 
     const newEntry = await (await new Movie({id}).fetch({
         require: false,
-        withRelated: ['productionCompany', 'categories', 'poster', 'movieScenes', 'movieScenes.movieSet', 'movieScenes.movieSet.address', 
+        withRelated: ['productionCompany', 'categories', 'poster', 'languages', 'movieScenes', 'movieScenes.movieSet', 'movieScenes.movieSet.address', 
         'movieScenes.movieSet.address.street', 'actors', 'actors.nationality', 'actors.actorPhoto','actors.awards', 'actors.awards.award', 'actors.studies', 
         'actors.studies.institution', 'actors.studies.degree', 'productionCrew', 'productionCrew.address',
         'productionCrew.address.street', 'productionCrew.address.street.location', 'productionCrew.address.street.location.country', 
@@ -122,7 +123,7 @@ export const updateMovie = async (req: express.Request, res: express.Response) =
     await knex.transaction(async trx => {
         const movie = await new Movie({id: req.params.id}).fetch({
             require: false,
-            withRelated: ['productionCompany', 'categories', 'poster', 'movieScenes', 'movieScenes.movieSet', 'movieScenes.movieSet.address', 
+            withRelated: ['productionCompany', 'categories', 'poster', 'languages', 'movieScenes', 'movieScenes.movieSet', 'movieScenes.movieSet.address', 
             'movieScenes.movieSet.address.street', 'actors', 'actors.nationality', 'actors.actorPhoto','actors.awards', 'actors.awards.award', 'actors.studies', 
             'actors.studies.institution', 'actors.studies.degree', 'productionCrew', 'productionCrew.address',
             'productionCrew.address.street', 'productionCrew.address.street.location', 'productionCrew.address.street.location.country', 
@@ -177,7 +178,7 @@ export const updateMovie = async (req: express.Request, res: express.Response) =
 
     const updatedMovie = (await new Movie({id: req.params.id}).fetch({
         require: false,
-        withRelated: ['productionCompany', 'categories', 'poster', 'movieScenes', 'movieScenes.movieSet', 'movieScenes.movieSet.address', 
+        withRelated: ['productionCompany', 'categories', 'poster', 'languages', 'movieScenes', 'movieScenes.movieSet', 'movieScenes.movieSet.address', 
         'movieScenes.movieSet.address.street', 'actors', 'actors.nationality', 'actors.actorPhoto','actors.awards', 'actors.awards.award', 'actors.studies', 
         'actors.studies.institution', 'actors.studies.degree', 'productionCrew', 'productionCrew.address',
         'productionCrew.address.street', 'productionCrew.address.street.location', 'productionCrew.address.street.location.country', 
@@ -195,7 +196,7 @@ export const deleteMovie = async (req: express.Request, res: express.Response) =
     await knex.transaction(async trx => {
         const movie = await new Movie({id: req.params.id}).fetch({
             require: false,
-            withRelated: ['productionCompany', 'categories', 'poster', 'movieScenes', 'movieScenes.movieSet', 'movieScenes.movieSet.address', 
+            withRelated: ['productionCompany', 'categories', 'poster', 'languages', 'movieScenes', 'movieScenes.movieSet', 'movieScenes.movieSet.address', 
             'movieScenes.movieSet.address.street', 'actors', 'actors.nationality', 'actors.actorPhoto','actors.awards', 'actors.awards.award', 'actors.studies', 
             'actors.studies.institution', 'actors.studies.degree', 'productionCrew', 'productionCrew.address',
             'productionCrew.address.street', 'productionCrew.address.street.location', 'productionCrew.address.street.location.country', 
@@ -203,6 +204,15 @@ export const deleteMovie = async (req: express.Request, res: express.Response) =
         });
         const oldCategoryIds = await Promise.all(movie.related('categories').toJSON().map((category: type.Category) => category.id));
         await movie.categories().detach(oldCategoryIds, {transacting: trx});
+
+        const oldLanguagesIds = await Promise.all(movie.related('languages').toJSON().map((language: type.Language) => language.id));
+        await movie.languages().detach(oldLanguagesIds, {transacting: trx});
+
+        const oldActorsIds = await Promise.all(movie.related('actors').toJSON().map((actor: type.Actor) => actor.id));
+        await movie.actors().detach(oldActorsIds, {transacting: trx});
+
+        const oldProductionCrewIds = await Promise.all(movie.related('productionCrew').toJSON().map((member: type.ProductionCrewMember) => member.id));
+        await movie.productionCrew().detach(oldProductionCrewIds, {transacting: trx})
 
         await movie.where({id:req.params.id}).destroy({transacting: trx});
 
