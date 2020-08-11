@@ -4,5 +4,10 @@ import fetch from 'node-fetch';
 dotenv.config();
 
 export async function searchMovieByTitle(title: string){
-    return (await fetch(`http://www.omdbapi.com/?t=${title}&apikey=${process.env.OMDB_API_KEY}`)).json();
+    let res;
+    res = (await fetch(`${process.env.OMDB_API_URL}?t=${title}&apikey=${process.env.OMDB_API_KEY}`));
+    if(res.status !== 2000 ){
+        return 'Error: Cannot access remote database.';
+    }
+    return res.json();
 }
