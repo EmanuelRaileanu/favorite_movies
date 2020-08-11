@@ -444,13 +444,13 @@ exports.seed = async function(knex) {
       await knex('movies_movie_categories')
         .insert({
           movieId: id,
-          categoryId: Math.floor(Math.random() * categorySeed.length) + 1
+          categoryId: Math.floor(Math.random() * movieCategorySeed.length) + 1
         });
       let entry;
       do{
         entry = {
           movieId: id,
-          categoryId: Math.floor(Math.random() * categorySeed.length) + 1
+          categoryId: Math.floor(Math.random() * movieCategorySeed.length) + 1
         };
       }while(!await checkUniqueMovieCategoryEntry(entry));
       await knex('movies_movie_categories').insert(entry);
@@ -634,15 +634,15 @@ exports.seed = async function(knex) {
     },
     {
       location: 'Washington DC',
-      countryId: await getCountryId('US')
+      countryId: await getCountryId('USA')
     },
     {
       location: 'New York',
-      countryId: await getCountryId('US')
+      countryId: await getCountryId('USA')
     },
     {
       location: 'Los Angeles',
-      countryId: await getCountryId('US')
+      countryId: await getCountryId('USA')
     },
     {
       location: 'Madrid',
@@ -804,7 +804,7 @@ exports.seed = async function(knex) {
 
   const productionCrewMoviesSeed = [
     {
-      productionCrewMemberId: await getProductionCrewMemberId({ firstName: 'Kevin', lastName: 'Feige' }),
+      productionCrewMemberId: await getProductionCrewMemberId({ firstName: 'Anthony', lastName: 'Russo' }),
       movieId: await getMovieId('Avengers: Infinity War')
     },
     {
@@ -832,7 +832,7 @@ exports.seed = async function(knex) {
       movieSceneId: await getMovieSceneId('Iron Man Vs Thanos Fight Scene')
     },
     {
-      productionCrewMemberId: await getProductionCrewMemberId({ firstName: 'Kevin', lastName: 'Feige' }),
+      productionCrewMemberId: await getProductionCrewMemberId({ firstName: 'Anthony', lastName: 'Russo' }),
       movieSceneId: await getMovieSceneId('Thor Arrives in Wakanda Scene')
     },
     {
