@@ -2,8 +2,9 @@ import { bookshelf } from '../utilities/knexconfig';
 import { Movie } from './movies';
 import { absoluteUrl } from '../utilities/absoluteUrl';
 import { Actor } from './actors';
+import { BaseModel } from './base_model';
 
-export class File extends bookshelf.Model<File>{
+export class File extends BaseModel{
     get tableName(){
         return 'files';
     }

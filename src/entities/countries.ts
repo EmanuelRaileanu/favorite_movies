@@ -1,8 +1,9 @@
 import { bookshelf } from '../utilities/knexconfig';
 import { Location } from './locations';
 import { Movie } from './movies';
+import { BaseModel } from './base_model';
 
-export class Country extends bookshelf.Model<Country>{
+export class Country extends BaseModel{
     get tableName(){
         return 'countries';
     }

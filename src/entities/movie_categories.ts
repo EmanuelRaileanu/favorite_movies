@@ -1,7 +1,8 @@
 import { bookshelf } from '../utilities/knexconfig';
 import { Movie } from '../entities/movies';
+import { BaseModel } from './base_model';
 
-export class MovieCategory extends bookshelf.Model<MovieCategory>{
+export class MovieCategory extends BaseModel{
     get tableName(){
         return 'movie_categories';
     }

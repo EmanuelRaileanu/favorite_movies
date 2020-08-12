@@ -1,7 +1,8 @@
 import { bookshelf } from '../utilities/knexconfig';
 import { Movie } from './movies';
+import { BaseModel } from './base_model';
 
-export class Language extends bookshelf.Model<Language>{
+export class Language extends BaseModel{
     get tableName(){
         return 'languages';
     }

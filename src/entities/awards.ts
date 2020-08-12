@@ -1,8 +1,9 @@
 import { bookshelf } from '../utilities/knexconfig';
 import { Actor } from './actors';
 import { AwardName } from './award_list';
+import { BaseModel } from './base_model';
 
-export class Award extends bookshelf.Model<Award>{
+export class Award extends BaseModel{
     get tableName(){
         return 'awards';
     }

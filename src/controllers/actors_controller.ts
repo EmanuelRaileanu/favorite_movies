@@ -6,8 +6,13 @@ import { Actor } from '../entities/actors';
 import { File } from '../entities/files';
 import { Award } from '../entities/awards';
 import { Studies } from '../entities/studies';
-import * as functions from '../utilities/functions';
+import { Nationality } from '../entities/nationalities';
+import { BaseModel } from '../entities/base_model';
 import * as type from '../utilities/customTypes';
+import { Institution } from '../entities/institutions';
+import { Degree } from '../entities/degrees';
+import { AwardName } from '../entities/award_list';
+import { Movie } from '../entities/movies';
 
 const deleteFile = util.promisify(fs.unlink);
 
@@ -72,7 +77,7 @@ export const postActor = async (req: express.Request, res: express.Response) => 
             fbProfileLink: req.body.fbProfileLink,
             shortDescription: req.body.shortDescription,
             recentPhotoId: imageId,
-            nationalityId: await functions.getNationalityId(String(req.body.nationality)) || await functions.getNationalityId('Other')
+            nationalityId: await new Nationality({nationality: String(req.body.nationality)}).checkIfExists(trx) || await new Nationality({nationality: 'Other'}).getId(trx)
         };
 
         id = (await new Actor().save(actor, {
@@ -82,7 +87,7 @@ export const postActor = async (req: express.Request, res: express.Response) => 
 
         if(req.body.studies !== undefined){
             for(const elem of req.body.studies){
-                if(await functions.checkIfInstitutionExists(elem.institutionId) && await functions.checkIfDegreeExists(elem.degreeId)){
+                if(await new Institution({id: elem.institutionId}).checkIfExists(trx) && await new Degree({id: elem.degreeId}).checkIfExists(trx)){
                     elem.actorId = id;
                     await new Studies().save(elem, {
                         transacting: trx,
@@ -93,7 +98,7 @@ export const postActor = async (req: express.Request, res: express.Response) => 
         }
         if(req.body.awards !== undefined){
             for(const award of req.body.awards){
-                if(await functions.checkIfAwardExists(award.awardId)){
+                if(await new AwardName({award: award.awardId}).checkIfExists(trx)){
                     award.actorId = id;
                     await new Award().save(award, {
                         transacting: trx,
@@ -107,7 +112,7 @@ export const postActor = async (req: express.Request, res: express.Response) => 
             let movieIds;
             movieIds = movies.map((movie: any) => movie.id);
             for(let i = 0; i < movieIds.length; i++){
-                if(!await functions.checkIfMovieExists(movieIds[i])){
+                if(!await new Movie({id: movieIds[i]}).checkIfExists(trx)){
                     movieIds.splice(i, 1);
                 }
             }
@@ -123,7 +128,7 @@ export const postActor = async (req: express.Request, res: express.Response) => 
 };
 
 export const updateActor = async (req: express.Request, res: express.Response) => {
-    if(!await functions.checkIfActorExists(parseInt(req.params.id, 10))){
+    if(!await new Actor({id: parseInt(req.params.id, 10)}).fetch({require: false})){
         res.json(`Canot update actor with id ${req.params.id} because it does not exist in the database`);
         return;
     }
@@ -140,7 +145,7 @@ export const updateActor = async (req: express.Request, res: express.Response) =
             const oldMovieIds = await Promise.all(actor.related('movies').toJSON().map((movie: type.Movie) => movie.id));
             await actor.movies().detach(oldMovieIds, {transacting: trx});
             for(const updatedMovieId of updatedMovieIds){
-                if(await functions.checkIfMovieExists(updatedMovieId)){
+                if(await new Movie({id: updatedMovieId}).checkIfExists(trx)){
                     finalMovieIds.push(updatedMovieId);
                 }
             }
@@ -149,8 +154,8 @@ export const updateActor = async (req: express.Request, res: express.Response) =
         }
 
         if(req.body.nationality !== undefined){
-            if(await functions.checkIfNationalityExists(req.body.nationality)){
-                req.body.nationalityId = await functions.getNationalityId(req.body.nationality);
+            if(await new Nationality({nationality: req.body.nationality}).checkIfExists(trx)){
+                req.body.nationalityId = await new Nationality({nationality: req.body.nationality}).getId(trx);
             }
             delete req.body.nationality;
         }
@@ -222,7 +227,7 @@ export const updateActor = async (req: express.Request, res: express.Response) =
 };
 
 export const deleteActor = async (req: express.Request, res: express.Response) => {
-    if(!functions.checkIfActorExists(parseInt(req.params.id, 10))){
+    if(!await new Actor({id: parseInt(req.params.id, 10)}).fetch({require: false})){
         res.status(404).json('Actor not found');
         return;
     }

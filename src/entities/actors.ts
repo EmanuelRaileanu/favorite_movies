@@ -5,8 +5,9 @@ import { Studies } from './studies';
 import { Award } from './awards';
 import { Nationality } from './nationalities';
 import { MovieScene } from './movie_scenes';
+import { BaseModel } from './base_model';
 
-export class Actor extends bookshelf.Model<Actor>{
+export class Actor extends BaseModel{
     get tableName(){
         return 'actors';
     }

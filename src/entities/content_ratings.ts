@@ -1,7 +1,8 @@
 import { bookshelf } from '../utilities/knexconfig';
 import { Movie } from './movies';
+import { BaseModel } from './base_model';
 
-export class ContentRating extends bookshelf.Model<ContentRating>{
+export class ContentRating extends BaseModel{
     get tableName(){
         return 'content_ratings';
     }

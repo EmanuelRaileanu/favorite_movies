@@ -2,8 +2,9 @@ import { bookshelf } from '../utilities/knexconfig';
 import { Street } from './streets';
 import { MovieSet } from './movie_sets';
 import { ProductionCrew } from './production_crew';
+import { BaseModel } from './base_model';
 
-export class Address extends bookshelf.Model<Address>{
+export class Address extends BaseModel{
     get tableName(){
         return 'addresses';
     }

@@ -4,8 +4,9 @@ import { Address } from './addresses';
 import { ProductionCompany } from './production_companies';
 import { Movie } from './movies';
 import { MovieScene } from './movie_scenes';
+import { BaseModel } from './base_model';
 
-export class ProductionCrew extends bookshelf.Model<ProductionCrew>{
+export class ProductionCrew extends BaseModel{
     get tableName(){
         return 'production_crew';
     }

@@ -1,61 +1,49 @@
 import { searchMovieByTitle } from '../utilities/omdbAPIFunctions';
 import inquirer from 'inquirer';
 import { knex } from '../utilities/knexconfig';
-import * as functions from '../utilities/functions';
 import { Movie } from '../entities/movies';
 import { Actor } from '../entities/actors';
 import { ProductionCompany } from '../entities/production_companies';
 import { ProductionCrew } from '../entities/production_crew';
 import { Language } from '../entities/languages';
-import { asyncMiddleware } from '../utilities/asyncMiddleware';
 import { exit } from 'process';
+import moment from 'moment';
+import { ContentRating } from '../entities/content_ratings';
+import { Country } from '../entities/countries';
+import { MovieCategory } from '../entities/movie_categories';
+import { ProductionCrewType } from '../entities/production_crew_types';
 // run with npm run script
 
 let movieList: any[] = [];
-const monthsArray: {[monthName: string]: string} = {
-    'Jan': '1',
-    'Feb': '2',
-    'Mar': '3',
-    'Apr': '4',
-    'May': '5',
-    'Jun': '6',
-    'Jul': '7',
-    'Aug': '8',
-    'Sep': '9',
-    'Oct': '10',
-    'Nov': '11',
-    'Dec': '12'
-};
 
 async function sendMovieListToDatabase(){
-    for(const movie of movieList){
-        await knex.transaction(async trx => {
-            if(!await functions.checkIfMovieExistsByTitle(movie.Title)){
+    await knex.transaction(async trx => {
+        for(const movie of movieList){
+            if(!await new Movie({title: movie.Title}).checkIfExists(trx)){
                 let prodCompId;
-                if(!await functions.checkIfProductionCompanyExists(movie.Production)){
+                let prodCompArray: string[] = [];
+                if(!await new ProductionCompany({name: movie.Production}).checkIfExists(trx) && !prodCompArray.includes(movie.Production)){
                     prodCompId = await (await new ProductionCompany().save({name: movie.Production}, {transacting: trx, method: 'insert'})).get('id');
                 }
                 else{
-                    prodCompId = await functions.getProductionCompanyId(movie.Production);
+                    prodCompId = await new ProductionCompany({name: movie.Production}).getId(trx);
                 }
 
-                let releaseDateArray = movie.Released.split(' ');
-                releaseDateArray[1] = monthsArray[releaseDateArray[1]];
-                const releaseDate = releaseDateArray.reverse().join('-');
+                const releaseDate = moment(movie.Released, 'DD MMM YYYY').format('YYYY-MM-DD');
                 const movieEntry = {
                     title: movie.Title,
                     description: movie.Plot,
                     releaseDate,
                     runtime: movie.Runtime,
                     overallRating: parseInt(movie.imdbRating, 10),
-                    gross: parseInt(movie.BoxOffice.replace(/,|\$/g, ''), 10),
+                    gross: parseInt(movie.BoxOffice.replace(/,|\$/g, ''), 10) || null,
                     awards: movie.Awards,
-                    contentRatingId: await functions.getContentRatingId(movie.Rated),
-                    countryId: await functions.getCountryId(movie.Country.split(', ')[0]),
+                    contentRatingId: await new ContentRating({rating: movie.Rated}).getId(trx),
+                    countryId: await new Country({countryName: movie.Country.split(', ')[0]}).getId(trx),
                     ProductionCompanyId: prodCompId
                 };
                 const movieId = await (await new Movie().save(movieEntry, {transacting: trx, method: 'insert'})).get('id');
-                const categoriesIds = await Promise.all(movie.Genre.split(', ').map(async (categoryName: string) => await functions.getCategoryId(categoryName)));
+                const categoriesIds = await Promise.all(movie.Genre.split(', ').map(async (categoryName: string) => await new MovieCategory({category: categoryName}).getId(trx)));
                 await new Movie({id: movieId}).categories().attach(categoriesIds, {transacting: trx});
                 
                 const productionCrewTypesIds: {[name: string]: number[]} = {};
@@ -79,7 +67,7 @@ async function sendMovieListToDatabase(){
                         lastName = x[1];
                     }
                     const name = `${firstName} ${lastName}`;
-                    productionCrewTypesIds[name] = [await functions.getProductionCrewTypeId('Producer')];
+                    productionCrewTypesIds[name] = [await new ProductionCrewType({type: 'Producer'}).getId(trx)];
                     productionCrew.push({
                         firstName,
                         lastName,
@@ -107,10 +95,10 @@ async function sendMovieListToDatabase(){
                     }
                     const name = `${firstName} ${lastName}`;
                     if(productionCrewTypesIds[name] === undefined){
-                        productionCrewTypesIds[name] = [await functions.getProductionCrewTypeId('Writer')];
+                        productionCrewTypesIds[name] = [await new ProductionCrewType({type: 'Writer'}).getId(trx)];
                     }
                     else{
-                        productionCrewTypesIds[name].push(await functions.getProductionCrewTypeId('Writer'));
+                        productionCrewTypesIds[name].push(await new ProductionCrewType({type: 'Writer'}).getId(trx));
                     }
                     const entry = {
                         firstName,
@@ -124,14 +112,14 @@ async function sendMovieListToDatabase(){
 
                 const productionCrewIds: number[] = [];
                 for(const productionCrewMember of productionCrew){
-                    if(!await functions.checkIfProductionCrewMemberExists({firstName: productionCrewMember.firstName, lastName: productionCrewMember.lastName})){
+                    if(!await new ProductionCrew({firstName: productionCrewMember.firstName, lastName: productionCrewMember.lastName}).checkIfExists(trx)){
                         const id = await (await new ProductionCrew().save(productionCrewMember, {transacting: trx, method: 'insert'})).get('id');
                         productionCrewIds.push(id);
                         const name = `${productionCrewMember.firstName} ${productionCrewMember.lastName}`;
                         await new ProductionCrew({id}).productionCrewType().attach(productionCrewTypesIds[name], {transacting: trx});
                     }
                     else{
-                        productionCrewIds.push(await functions.getProductionCrewMemberId({ firstName: productionCrewMember.firstName, lastName: productionCrewMember.lastName }));
+                        productionCrewIds.push(await new ProductionCrew({ firstName: productionCrewMember.firstName, lastName: productionCrewMember.lastName }).getId(trx));
                     }
                 }
                 await new Movie({id: movieId}).productionCrew().attach(productionCrewIds, {transacting: trx});
@@ -157,11 +145,11 @@ async function sendMovieListToDatabase(){
 
                 const actorsIds: number[] = [];
                 for(const actor of actors){
-                    if(!await functions.checkIfActorExistsByName(actor)){
+                    if(!await new Actor({name: actor}).checkIfExists(trx)){
                         actorsIds.push(await (await new Actor().save(actor, {transacting: trx, method: 'insert'})).get('id'));
                     }
                     else{
-                        actorsIds.push(await functions.getActorId(actor));
+                        actorsIds.push(await new Actor({name: actor}).getId(trx));
                     }
                 }
                 await new Movie({id: movieId}).actors().attach(actorsIds, {transacting: trx});
@@ -169,17 +157,17 @@ async function sendMovieListToDatabase(){
                 const languagesIds: number[] = [];
                 const languages: string = movie.Language.split(', ');
                 for(const language of languages){
-                    if(! await functions.checkIfLanguageExists({language})){
+                    if(! await new Language({language}).checkIfExists(trx)){
                         languagesIds.push(await (await new Language().save({language}, {transacting: trx, method: 'insert'})).get('id'));
                     }
                     else{
-                        languagesIds.push(await functions.getLanguageId(language));
+                        languagesIds.push(await new Language({language}).getId(trx));
                     }
                 }
                 await new Movie({id: movieId}).languages().attach(languagesIds, {transacting: trx});
             }
-        });
-    }
+        }
+    });
 }
 
 async function saveMovie(movie: any){

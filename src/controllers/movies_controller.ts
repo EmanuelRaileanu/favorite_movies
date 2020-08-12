@@ -6,7 +6,6 @@ import { MovieCategory } from '../entities/movie_categories';
 import { File } from '../entities/files';
 import fs from 'fs';
 import util from 'util';
-import * as functions from '../utilities/functions';
 import * as type from '../utilities/customTypes';
 import { searchMovieByTitle } from '../utilities/omdbAPIFunctions';
 
@@ -92,7 +91,7 @@ export const postMovie = async (req: express.Request, res: express.Response) => 
             let categoryIds;
             categoryIds = (req.body.categories.map((category: any) => category.id));
             for(let i = 0; i < categoryIds.length; i++){
-                if(!await functions.checkIfCategoryExists(categoryIds[i])){
+                if(!await new MovieCategory({id: categoryIds[i]}).checkIfExists(trx)){
                     categoryIds.splice(i, 1);
                 }
             }
@@ -113,7 +112,7 @@ export const postMovie = async (req: express.Request, res: express.Response) => 
 };
 
 export const updateMovie = async (req: express.Request, res: express.Response) => {
-    if(!await functions.checkIfMovieExists(parseInt(req.params.id, 10))){
+    if(!await new MovieCategory({id: parseInt(req.params.id, 10)}).fetch({require: false})){
         res.json(`Canot update movie with id ${req.params.id} because it does not exist in the database`);
         return;
     }
@@ -134,7 +133,7 @@ export const updateMovie = async (req: express.Request, res: express.Response) =
             const oldCategoryIds = await Promise.all(movie.related('categories').toJSON().map((category: type.Category) => category.id));
             await movie.categories().detach(oldCategoryIds, {transacting: trx});
             for(const updatedCategoryId of updatedCategoryIds){
-                if(await functions.checkIfCategoryExists(updatedCategoryId)){
+                if(await new MovieCategory({id: updatedCategoryId}).checkIfExists(trx)){
                     finalCategoryIds.push(updatedCategoryId);
                 }
             }
@@ -189,7 +188,7 @@ export const updateMovie = async (req: express.Request, res: express.Response) =
 };
 
 export const deleteMovie = async (req: express.Request, res: express.Response) => {
-    if(!functions.checkIfMovieExists(parseInt(req.params.id, 10))){
+    if(!new Movie({id: parseInt(req.params.id, 10)}).fetch({require: false})){
         res.status(404).json('Movie not found');
         return;
     }

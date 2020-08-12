@@ -1,8 +1,9 @@
 import { bookshelf } from '../utilities/knexconfig';
 import { Movie } from './movies';
 import { ProductionCrew } from './production_crew';
+import { BaseModel } from './base_model';
 
-export class ProductionCompany extends bookshelf.Model<ProductionCompany>{
+export class ProductionCompany extends BaseModel{
 
     get tableName(){
         return 'production_companies';

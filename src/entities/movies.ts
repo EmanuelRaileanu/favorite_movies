@@ -8,8 +8,9 @@ import { ProductionCrew } from './production_crew';
 import { ContentRating } from './content_ratings';
 import { Country } from './countries';
 import { Language } from './languages';
+import { BaseModel } from './base_model';
 
-export class Movie extends bookshelf.Model<Movie>{
+export class Movie extends BaseModel{
     [x: string]: any;
 
     get tableName(){

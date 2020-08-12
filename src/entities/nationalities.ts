@@ -1,7 +1,8 @@
 import { bookshelf } from '../utilities/knexconfig';
 import { Actor } from './actors';
+import { BaseModel } from './base_model';
 
-export class Nationality extends bookshelf.Model<Nationality>{
+export class Nationality extends BaseModel{
     get tableName(){
         return 'nationalities';
     }

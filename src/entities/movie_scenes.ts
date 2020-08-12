@@ -3,8 +3,9 @@ import { MovieSet } from './movie_sets';
 import { Movie } from './movies';
 import { ProductionCrew } from './production_crew';
 import { Actor } from './actors';
+import { BaseModel } from './base_model';
 
-export class MovieScene extends bookshelf.Model<MovieScene>{
+export class MovieScene extends BaseModel{
     get tableName(){
         return 'movie_scenes';
     }

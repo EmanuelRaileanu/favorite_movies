@@ -1,8 +1,9 @@
 import { bookshelf } from '../utilities/knexconfig';
 import { Location } from './locations';
 import { Address } from './addresses';
+import { BaseModel } from './base_model';
 
-export class Street extends bookshelf.Model<Street>{
+export class Street extends BaseModel{
     get tableName(){
         return 'streets';
     }
