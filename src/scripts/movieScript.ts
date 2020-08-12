@@ -14,6 +14,7 @@ import { MovieCategory } from '../entities/movie_categories';
 import { ProductionCrewType } from '../entities/production_crew_types';
 import { File } from '../entities/files';
 import download from '../utilities/downloadFile'; 
+import { sha256 } from '../utilities/sha256';
 // run with npm run script
 
 let movieList: any[] = [];
@@ -31,12 +32,7 @@ async function sendMovieListToDatabase(){
                     prodCompId = await new ProductionCompany({name: movie.Production}).getId(trx);
                 }
 
-                let poster;
-                if(movie.Poster !== 'N/A'){
-                    poster = download(movie.Poster);
-                }
-
-                const posterId = await (await new File().save(poster, {transacting: trx, method: 'insert'})).get('id');
+                let posterId = null;
             
                 const releaseDate = moment(movie.Released, 'DD MMM YYYY').format('YYYY-MM-DD');
                 const movieEntry = {
@@ -175,6 +171,24 @@ async function sendMovieListToDatabase(){
                     }
                 }
                 await new Movie({id: movieId}).languages().attach(languagesIds, {transacting: trx});
+
+                let res: any;
+                if(movie.Poster !== 'N/A' && movieId){
+                    res = download(movie.Poster);
+                };
+                const originalFileName = res.uri.pathname.substring(res.uri.pathname.lastIndexOf('/') + 1);
+                const extensionDotIndex = originalFileName.lastIndexOf('.');
+                const extension = originalFileName.substring(extensionDotIndex);
+                const fileName = sha256(originalFileName.substring(0, extensionDotIndex)) + extension;
+                const relativePath = `public/uploads/${fileName}`;
+                const poster = {
+                    originalFileName,
+                    mimeType: originalFileName.substring(originalFileName.lastIndexOf('.') + 1),
+                    relativePath,
+                    fileName 
+                }
+                posterId = await (await new File().save(poster, {transacting: trx, method: 'insert'})).get('id');
+                await new Movie().where({id: movieId}).save({posterId}, {transacting: trx, method: 'update'});
             }
         }
     });
@@ -229,6 +243,7 @@ async function showMovieList(){
         switch(ans.choice){
             case '1':
                 await sendMovieListToDatabase();
+                movieList = [];
                 break;
             case '2':
                 movieList = [];
