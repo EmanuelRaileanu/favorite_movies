@@ -12,6 +12,8 @@ import { ContentRating } from '../entities/content_ratings';
 import { Country } from '../entities/countries';
 import { MovieCategory } from '../entities/movie_categories';
 import { ProductionCrewType } from '../entities/production_crew_types';
+import { File } from '../entities/files';
+import download from '../utilities/downloadFile'; 
 // run with npm run script
 
 let movieList: any[] = [];
@@ -29,6 +31,13 @@ async function sendMovieListToDatabase(){
                     prodCompId = await new ProductionCompany({name: movie.Production}).getId(trx);
                 }
 
+                let poster;
+                if(movie.Poster !== 'N/A'){
+                    poster = download(movie.Poster);
+                }
+
+                const posterId = await (await new File().save(poster, {transacting: trx, method: 'insert'})).get('id');
+            
                 const releaseDate = moment(movie.Released, 'DD MMM YYYY').format('YYYY-MM-DD');
                 const movieEntry = {
                     title: movie.Title,
@@ -40,7 +49,8 @@ async function sendMovieListToDatabase(){
                     awards: movie.Awards,
                     contentRatingId: await new ContentRating({rating: movie.Rated}).getId(trx),
                     countryId: await new Country({countryName: movie.Country.split(', ')[0]}).getId(trx),
-                    ProductionCompanyId: prodCompId
+                    ProductionCompanyId: prodCompId, 
+                    posterId: posterId || null
                 };
                 const movieId = await (await new Movie().save(movieEntry, {transacting: trx, method: 'insert'})).get('id');
                 const categoriesIds = await Promise.all(movie.Genre.split(', ').map(async (categoryName: string) => await new MovieCategory({category: categoryName}).getId(trx)));
