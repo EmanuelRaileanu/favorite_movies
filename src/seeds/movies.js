@@ -220,6 +220,14 @@ async function checkUniqueContentRating(rating){
   return false;
 }
 
+async function checkUniqueProductionCrewAssociatedTypeEntry(entry){
+  const find = await knex('production_crew_associated_types').where(entry).first();
+  if(!find){
+    return true;
+  }
+  return false;
+}
+
 async function getMovieId(title){
   return (await knex('movies').where({title: title}).first()).id;
 }
@@ -410,7 +418,7 @@ exports.seed = async function(knex) {
 
   const categorySeed = ['Action', 'Comedy', 'Drama', 'Fantasy', 'Horror', 'Mystery', 'Romance', 'Thriller', 'Adventure', 'Family',
                         'Sci-Fi', 'Crime', 'Historical', 'Historical fiction', 'Horror', 'Magical realism', 'Paranoid fiction', 
-                        'Philosophical', 'Political', 'Urban'];
+                        'Philosophical', 'Political', 'Urban', 'Animation'];
   for(let i = 0; i < categorySeed.length; i++){
     if(await checkUniqueCategory(categorySeed[i])){
       await knex('movie_categories').insert({ category: categorySeed[i] });
@@ -616,7 +624,7 @@ exports.seed = async function(knex) {
     }
   }
 
-  const countrySeed = ['USA', 'Canada', 'Germany', 'Australia', 'Romania', 'Italy', 'Spain', 'Iceland', 'Norway', 'UK', 'Other'];
+  const countrySeed = ['USA', 'Canada', 'Germany', 'Australia', 'Romania', 'Italy', 'Spain', 'Iceland', 'Norway', 'UK', 'Other', 'New Zealand'];
   for(const countryName of countrySeed){
     if(await checkUniqueCountry(countryName)){
       await knex('countries').insert({ countryName });
@@ -748,7 +756,6 @@ exports.seed = async function(knex) {
       lastName: 'Russo',
       dateOfBirth: '1973-06-2',
       addressId: Math.floor(Math.random() * 2 * streetSeed.length) + 1,
-      typeId: await getProductionCrewTypeId('Producer'),
       productionCompanyId: await getProductionCompanyId('Marvel Studios')
     },
     {
@@ -756,7 +763,6 @@ exports.seed = async function(knex) {
       lastName: 'Russo',
       dateOfBirth: '1971-07-18',
       addressId: Math.floor(Math.random() * 2 * streetSeed.length) + 1,
-      typeId: await getProductionCrewTypeId('Producer'),
       productionCompanyId: await getProductionCompanyId('Marvel Studios')
     },
     {
@@ -764,7 +770,7 @@ exports.seed = async function(knex) {
       lastName: 'Stahelski',
       dateOfBirth: '1968-09-20',
       addressId: Math.floor(Math.random() * 2 * streetSeed.length) + 1,
-      typeId: await getProductionCrewTypeId('Producer'),
+
       productionCompanyId: await getProductionCompanyId('Summit Entertainment')
     }
   ];
@@ -774,8 +780,27 @@ exports.seed = async function(knex) {
     }
   }
 
-  let sceneCount = Array(seed.length).fill(0)
+  const productionCrewAssociatedTypesSeed = [
+    {
+      productionCrewMemberId: await getProductionCrewMemberId({ firstName: 'Anthony', lastName: 'Russo' }),
+      typeId: await getProductionCrewTypeId('Producer')
+    },
+    {
+      productionCrewMemberId: await getProductionCrewMemberId({ firstName: 'Joe', lastName: 'Russo' }),
+      typeId: await getProductionCrewTypeId('Producer')
+    },
+    {
+      productionCrewMemberId: await getProductionCrewMemberId({ firstName: 'Chad', lastName: 'Stahelski' }),
+      typeId: await getProductionCrewTypeId('Producer')
+    }
+  ];
+  for(const productionCrewAssociatedType of productionCrewAssociatedTypesSeed){
+    if(await checkUniqueProductionCrewAssociatedTypeEntry(productionCrewAssociatedType)){
+      await knex('production_crew_associated_types').insert(productionCrewAssociatedType);
+    }
+  }
 
+  let sceneCount = Array(seed.length).fill(0)
   const movieScenesSeed = [
     {
       movieSceneName: 'Iron Man Vs Thanos Fight Scene',

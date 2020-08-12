@@ -10,9 +10,9 @@ export class ProductionCrew extends bookshelf.Model<ProductionCrew>{
         return 'production_crew';
     }
 
-    // one-to-many relationship with ProductionCrewType
+    // many-to-many relationship with ProductionCrewType
     productionCrewType(){
-        return this.belongsTo(ProductionCrewType, 'typeId', 'id');
+        return this.belongsToMany(ProductionCrewType, 'production_crew_associated_types', 'ProductionCrewMemberId', 'typeId');
     }
 
     // one-to-many relationship with ProductionCompany
