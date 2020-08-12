@@ -1,7 +1,8 @@
 import { bookshelf } from '../utilities/knexconfig';
 import { Studies } from './studies';
+import { BaseModel } from './base_model';
 
-export class Degree extends bookshelf.Model<Degree>{
+export class Degree extends BaseModel{
     get tableName(){
         return 'degrees';
     }

@@ -4,8 +4,10 @@ import { Movie } from './movies';
 import { Studies } from './studies';
 import { Award } from './awards';
 import { Nationality } from './nationalities';
+import { MovieScene } from './movie_scenes';
+import { BaseModel } from './base_model';
 
-export class Actor extends bookshelf.Model<Actor>{
+export class Actor extends BaseModel{
     get tableName(){
         return 'actors';
     }
@@ -33,5 +35,10 @@ export class Actor extends bookshelf.Model<Actor>{
     // one-to-many relationship with Nationality
     nationality(){
         return this.belongsTo(Nationality, 'actorId', 'id');
+    }
+
+    // many-to-many relationship wtih MovieScene
+    movieScenes(){
+        return this.belongsToMany(MovieScene, 'actors_movie_scenes', 'actorId', 'sceneId');
     }
 }

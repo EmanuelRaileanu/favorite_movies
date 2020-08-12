@@ -2,8 +2,9 @@ import { bookshelf } from '../utilities/knexconfig';
 import { Actor } from './actors';
 import { Institution } from './institutions';
 import { Degree } from './degrees';
+import { BaseModel } from './base_model';
 
-export class Studies extends bookshelf.Model<Studies>{
+export class Studies extends BaseModel{
     get tableName(){
         return 'studies';
     }

@@ -1,7 +1,8 @@
 import { bookshelf } from '../utilities/knexconfig';
 import { Studies } from './studies';
+import { BaseModel } from './base_model';
 
-export class Institution extends bookshelf.Model<Institution>{
+export class Institution extends BaseModel{
     get tableName(){
         return 'institutions';
     }
