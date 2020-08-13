@@ -3,6 +3,9 @@ import { User } from '../entities/users';
 import crypto from 'crypto'; 
 import { knex } from '../utilities/knexconfig';
 import transporter from '../utilities/nodemailerConfig';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 export const register = async (req: express.Request, res: express.Response) => {
     const {name, dateOfBirth, email, password, confirmPassword} = req.body;
@@ -33,18 +36,21 @@ export const register = async (req: express.Request, res: express.Response) => {
         return;
     }
 
-    const info = await transporter.sendMail({
+    const confirmationToken = crypto.randomBytes(20).toString('hex');
+
+    await transporter.sendMail({
         from: "'Api', <mail@api.com>",
         to: email,
         subject: 'Confirm your account',
-        text: `Please confirm your new account. Confirmation token: ${crypto.randomBytes(20).toString('hex')}`
+        text: `Please confirm your new account. Confirmation token: ${confirmationToken}`
     });
     
     const userEntry = {
         email,
         password,
         name,
-        dateOfBirth
+        dateOfBirth, 
+        confirmationToken
     };
 
     await new User().save(userEntry, {method: 'insert'});
@@ -64,68 +70,72 @@ export const login = async (req: express.Request, res: express.Response) => {
         return;
     }
     
-    if(!await (await new User({email, password}).fetch({require: false})).get('confirmationToken')){
+    if(!await (await new User({email, password}).fetch({require: false})).get('isConfirmed')){
         res.json('Failed to log in. Please confirm your account first.');
         return;
     }
 
-    const token = crypto.randomBytes(20).toString('hex');
+    const bearerToken = crypto.randomBytes(20).toString('hex');
     let user: any;
 
     await knex.transaction(async trx => {
         user = await new User({email, password}).fetch({require: false, transacting: trx});
-        await user.save({bearerToken: token}, {transacting: trx, method: 'update'});
+        await user.save({bearerToken}, {transacting: trx, method: 'update'});
     });
 
     res.json(user.get('bearerToken'));
 };
 
-export const logout = async (req:express.Request, res: express.Response) => {
-    const user = await new User({bearerToken: req.headers.authorization?.split(' ')[1]}).fetch({require: false});
+export const logout = async (req: any, res: express.Response) => {
+    const user = req.user;
     if(!user){
         res.json('User not found!');
         return;
     }
 
-    user.save({bearerToken: null}, {method: 'update'});
+    await new User().where({id: user.id}).save({bearerToken: null}, {method: 'update'});
 
     res.json('Logged out successfully!');
 };
 
 export const confirmAccount = async (req:express.Request, res: express.Response) => {
-    const confirmationToken = req.headers.authorization?.split(' ')[1];
+    const confirmationToken = req.body.token;
 
-    if(!await new User().where({email: req.params.email}).save({confirmationToken}, {method: 'update'})){
-        res.json('Error: Account does not exist.');
-        return;
-    }
-    
+    await knex.transaction(async trx => {
+        const user = await new User().where({confirmationToken}).fetch({require: false, transacting: trx});
+        if(!user){
+            res.json('Error: Account does not exist.');
+            return;
+        }
+        await user.save({isConfirmed: true}, {transacting: trx, method: 'update'});
+        await user.save({confirmationToken: null}, {transacting: trx, method: 'update'});
+    });
+
     res.json('Account confirmed');
 };
 
 export const sendPasswordResetRequest = async (req:express.Request, res: express.Response) => {
     const resetPasswordToken = crypto.randomBytes(20).toString('hex');
-    if(!await new User().where({email: req.params.email}).save({resetPasswordToken}, {method: 'update'})){
+    if(!await new User().where({email: req.body.email}).save({resetPasswordToken}, {method: 'update'})){
         res.json('Error: Account does not exist.');
         return;
     }
 
     await transporter.sendMail({
         from: "'Api', <mail@api.com>",
-        to: req.params.email,
+        to: req.body.email,
         subject: 'Password reset',
-        text: `Password reset token: ${resetPasswordToken}`
+        text: `To change your password please access http://${process.env.API_URL}:${process.env.SERVER_PORT}/auth/changePassword \nPassword reset token: ${resetPasswordToken}`
     });
 
     res.json('Password reset request sent. Please check your email.');
 };
 
 export const resetPassword = async (req:express.Request, res: express.Response) => {
-    const resetPasswordToken = req.headers.authorization?.split(' ')[1];
-    const {password, confirmPassword} = req.body;
+    const {resetPasswordToken, password, confirmPassword} = req.body;
 
     if(!resetPasswordToken){
-        res.json('Error: No password reset request received.');
+        res.json('Error: No password reset token received.');
     }
 
     if(!password || !confirmPassword){
@@ -143,6 +153,37 @@ export const resetPassword = async (req:express.Request, res: express.Response) 
         return;
     }
 
-    await new User().where({resetPasswordToken}).save({password}, {method: 'update'});
+    await new User().where({resetPasswordToken}).save({password, resetPasswordToken: null}, {method: 'update'});
+    
     res.json('Password successfully changed!');
 };
+
+export const resendConfirmationEmail = async (req:express.Request, res: express.Response) => {
+    if(!req.body.email){
+        res.status(400).json('Bad request.');
+        return;
+    }
+
+    const user = await new User({email: req.body.email}).fetch({require: false});
+
+    if(!user){
+        res.json('The user does not exist.');
+        return;
+    }
+
+    const confirmationToken = await user.get('confirmationToken');
+
+    if(!confirmationToken){
+        res.json('This account has already been confirmed.');
+        return;
+    }
+
+    await transporter.sendMail({
+        from: "'Api', <mail@api.com>",
+        to: req.body.email,
+        subject: 'Confirm your account',
+        text: `Please confirm your new account. Confirmation token: ${confirmationToken}`
+    });
+
+    res.json('Confirmation email sent.');
+}
