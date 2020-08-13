@@ -77,8 +77,9 @@ export const postActor = async (req: express.Request, res: express.Response) => 
             fbProfileLink: req.body.fbProfileLink,
             shortDescription: req.body.shortDescription,
             recentPhotoId: imageId,
-            nationalityId: await new Nationality({nationality: String(req.body.nationality)}).checkIfExists(trx) || await new Nationality({nationality: 'Other'}).getId(trx)
+            nationalityId: await new Nationality({nationality: String(req.body.nationality)}).fetch({require: false, transacting: trx}).get('nationality') || await new Nationality({nationality: 'Other'}).getId(trx)
         };
+        console.log(actor)
 
         id = (await new Actor().save(actor, {
             transacting: trx,
@@ -98,7 +99,7 @@ export const postActor = async (req: express.Request, res: express.Response) => 
         }
         if(req.body.awards !== undefined){
             for(const award of req.body.awards){
-                if(await new AwardName({award: award.awardId}).checkIfExists(trx)){
+                if(await new AwardName({id: award.awardId}).checkIfExists(trx)){
                     award.actorId = id;
                     await new Award().save(award, {
                         transacting: trx,
