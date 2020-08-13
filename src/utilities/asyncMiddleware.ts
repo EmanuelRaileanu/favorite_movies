@@ -1,6 +1,6 @@
 import express from 'express';
 
-export const asyncMiddleware = (fn: any) =>
+const asyncMiddleware = (fn: any) =>
   async (req: express.Request, res: express.Response) => {
     try {
         await Promise.resolve(fn(req, res));
@@ -10,3 +10,5 @@ export const asyncMiddleware = (fn: any) =>
         });
     }
 };
+
+export default asyncMiddleware;
