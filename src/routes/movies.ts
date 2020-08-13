@@ -1,6 +1,6 @@
 import express from 'express';
 import * as controller from '../controllers/movies_controller';
-import { asyncMiddleware } from '../utilities/asyncMiddleware';
+import asyncMiddleware from '../utilities/asyncMiddleware';
 import { upload } from '../utilities/multerConfig';
 
 export const register = (router: express.Router) => {

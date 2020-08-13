@@ -1,6 +1,6 @@
 import express from 'express';
 import * as controller from '../controllers/productionCompanies_controller';
-import { asyncMiddleware } from '../utilities/asyncMiddleware';
+import asyncMiddleware from '../utilities/asyncMiddleware';
 
 export const register = (router: express.Router) => {
     router.get('/productionCompanies', asyncMiddleware(controller.getProductionCompanies));

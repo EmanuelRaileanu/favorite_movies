@@ -5,8 +5,8 @@ import * as movies from './routes/movies';
 import * as err from './routes/err';
 import * as productionCompanies from './routes/productionCompanies';
 import * as actors from './routes/actors';
-import * as register from './routes/register';
-import * as login from './routes/login';
+import * as profile from './routes/profile';
+import * as auth from './routes/auth';
 import passport from 'passport';
 import configurePassport from './utilities/authMiddleware';
 dotenv.config();
@@ -25,11 +25,11 @@ root.register(apiRouter);
 movies.register(apiRouter);
 productionCompanies.register(apiRouter);
 actors.register(apiRouter);
+profile.register(apiRouter);
 
 const loginRouter = express.Router();
 app.use('/auth', loginRouter);
-register.register(loginRouter);
-login.register(loginRouter);
+auth.register(loginRouter);
 
 err.register(app);
 
