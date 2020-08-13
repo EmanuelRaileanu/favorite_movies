@@ -8,26 +8,16 @@ import * as actors from './routes/actors';
 import * as register from './routes/register';
 import * as login from './routes/login';
 import passport from 'passport';
-import { User } from './entities/users';
-const BearerStrategy = require('passport-http-bearer');
-
+import configurePassport from './utilities/authMiddleware';
 dotenv.config();
 
 const app = express();
 const port = process.env.SERVER_PORT;
 
-passport.use(new BearerStrategy(
-    async (token: any, done: any) => {
-      const user = await new User({bearerToken: token}).fetch({require: false});
-        if (!user){ 
-            return done(null, false); 
-        }
-        return done(null, user, { scope: 'all' });
-    }
-));
-
 app.use(express.json());
 app.use('/public', express.static('public'));
+
+configurePassport();
 
 const apiRouter = express.Router();
 app.use('/api', passport.authenticate('bearer', { session: false }), apiRouter);

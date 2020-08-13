@@ -1,5 +1,6 @@
 import express from 'express';
 import { User } from '../entities/users';
+import crypto from 'crypto'; 
 
 export const register = async (req: express.Request, res: express.Response) => {
     const {name, dateOfBirth, email, password, confirmPassword} = req.body;
@@ -20,11 +21,7 @@ export const register = async (req: express.Request, res: express.Response) => {
         res.json('An user with this email address already exists!');
     }
 
-    const auth = req.headers.authorization;
-    if(!auth){
-        res.json('Cannot get bearer token.');
-    }
-    const token = auth?.split(' ')[1];
+    const token = crypto.randomBytes(20).toString('hex');
     
     const userEntry = {
         email,
@@ -37,4 +34,24 @@ export const register = async (req: express.Request, res: express.Response) => {
     await new User().save(userEntry, {method: 'insert'});
 
     res.json('Registered successfully!');
+};
+
+export const login = async (req: express.Request, res: express.Response) => {
+    const {email, password} = req.body;
+
+    if(!email){
+        res.json('Please enter your email.');
+    }
+
+    else if(!password){
+        res.json('Please enter your password.')
+    }
+
+    const user = await new User({email, password}).fetch({require: false});
+
+    if(!user){
+        res.json('Incorrect email or password!');
+    }
+
+    res.json(user.get('bearerToken'));
 };
