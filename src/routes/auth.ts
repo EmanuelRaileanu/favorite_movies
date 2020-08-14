@@ -12,5 +12,5 @@ export const register = (router: express.Router) => {
     router.put('/changePassword', asyncMiddleware(controller.resetPassword));
     router.put('/resendConfirmationEmail', asyncMiddleware(controller.resendConfirmationEmail));
     router.get('/google', passport.authenticate('google', {scope: ['openid', 'email', 'profile']}));
-    router.get('/google/callback', passport.authenticate('google', {session: false}), (req, res) => res.json(req.query.code));
+    router.get('/google/callback', passport.authenticate('google', {session: false}), (req, res) => res.json(req.user));
 };
