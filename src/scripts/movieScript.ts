@@ -26,7 +26,7 @@ async function sendMovieListToDatabase(){
                 let prodCompId;
                 let prodCompArray: string[] = [];
                 if(!await new ProductionCompany({name: movie.Production}).checkIfExists(trx) && !prodCompArray.includes(movie.Production)){
-                    prodCompId = await (await new ProductionCompany().save({name: movie.Production}, {transacting: trx, method: 'insert'})).get('id');
+                    prodCompId =  (await new ProductionCompany().save({name: movie.Production}, {transacting: trx, method: 'insert'})).get('id');
                 }
                 else{
                     prodCompId = await new ProductionCompany({name: movie.Production}).getId(trx);
@@ -48,7 +48,7 @@ async function sendMovieListToDatabase(){
                     ProductionCompanyId: prodCompId, 
                     posterId: posterId || null
                 };
-                const movieId = await (await new Movie().save(movieEntry, {transacting: trx, method: 'insert'})).get('id');
+                const movieId =  (await new Movie().save(movieEntry, {transacting: trx, method: 'insert'})).get('id');
                 const categoriesIds = await Promise.all(movie.Genre.split(', ').map(async (categoryName: string) => await new MovieCategory({category: categoryName}).getId(trx)));
                 await new Movie({id: movieId}).categories().attach(categoriesIds, {transacting: trx});
                 
@@ -119,7 +119,7 @@ async function sendMovieListToDatabase(){
                 const productionCrewIds: number[] = [];
                 for(const productionCrewMember of productionCrew){
                     if(!await new ProductionCrew({firstName: productionCrewMember.firstName, lastName: productionCrewMember.lastName}).checkIfExists(trx)){
-                        const id = await (await new ProductionCrew().save(productionCrewMember, {transacting: trx, method: 'insert'})).get('id');
+                        const id =  (await new ProductionCrew().save(productionCrewMember, {transacting: trx, method: 'insert'})).get('id');
                         productionCrewIds.push(id);
                         const name = `${productionCrewMember.firstName} ${productionCrewMember.lastName}`;
                         await new ProductionCrew({id}).productionCrewType().attach(productionCrewTypesIds[name], {transacting: trx});
@@ -152,7 +152,7 @@ async function sendMovieListToDatabase(){
                 const actorsIds: number[] = [];
                 for(const actor of actors){
                     if(!await new Actor({name: actor}).checkIfExists(trx)){
-                        actorsIds.push(await (await new Actor().save(actor, {transacting: trx, method: 'insert'})).get('id'));
+                        actorsIds.push( (await new Actor().save(actor, {transacting: trx, method: 'insert'})).get('id'));
                     }
                     else{
                         actorsIds.push(await new Actor({name: actor}).getId(trx));
@@ -164,7 +164,7 @@ async function sendMovieListToDatabase(){
                 const languages: string = movie.Language.split(', ');
                 for(const language of languages){
                     if(! await new Language({language}).checkIfExists(trx)){
-                        languagesIds.push(await (await new Language().save({language}, {transacting: trx, method: 'insert'})).get('id'));
+                        languagesIds.push( (await new Language().save({language}, {transacting: trx, method: 'insert'})).get('id'));
                     }
                     else{
                         languagesIds.push(await new Language({language}).getId(trx));
@@ -187,7 +187,7 @@ async function sendMovieListToDatabase(){
                     relativePath,
                     fileName 
                 }
-                posterId = await (await new File().save(poster, {transacting: trx, method: 'insert'})).get('id');
+                posterId =  (await new File().save(poster, {transacting: trx, method: 'insert'})).get('id');
                 await new Movie().where({id: movieId}).save({posterId}, {transacting: trx, method: 'update'});
             }
         }

@@ -70,7 +70,7 @@ export const login = async (req: express.Request, res: express.Response) => {
         return;
     }
     
-    if(!await (await new User({email, password}).fetch({require: false})).get('isConfirmed')){
+    if(!(await new User({email, password}).fetch({require: false})).get('isConfirmed')){
         res.json('Failed to log in. Please confirm your account first.');
         return;
     }
@@ -171,7 +171,7 @@ export const resendConfirmationEmail = async (req:express.Request, res: express.
         return;
     }
 
-    const confirmationToken = await user.get('confirmationToken');
+    const confirmationToken = user.get('confirmationToken');
 
     if(!confirmationToken){
         res.json('This account has already been confirmed.');
@@ -186,4 +186,8 @@ export const resendConfirmationEmail = async (req:express.Request, res: express.
     });
 
     res.json('Confirmation email sent.');
-}
+};
+
+export const googleLogin = async (req:express.Request, res: express.Response) => {
+    res.json('Successfully logged in with google!');
+};
