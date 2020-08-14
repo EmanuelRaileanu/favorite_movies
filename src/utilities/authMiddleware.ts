@@ -28,9 +28,6 @@ export const configureGoogleAuth = (clientID: string | undefined, clientSecret: 
                 refreshToken
             }, {method: 'insert'});
         }
-        else if(user && user.get('accessToken') != accessToken){
-            user = user.save({accessToken}, {method: 'update'});
-        }
         return cb(null, user, { scope: 'all' });
     })
 );
