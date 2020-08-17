@@ -6,7 +6,6 @@ export default function download(url: string){
     return request.head(url,(err, res, body) => {
         const originalFileName = url.substring(url.lastIndexOf('/') + 1);
         const extensionDotIndex = originalFileName.lastIndexOf('.');
-        const mimeType = url.substring(extensionDotIndex + 1);
         const extension = originalFileName.substring(extensionDotIndex);
         const fileName = sha256(originalFileName.substring(0, extensionDotIndex)) + extension;
         const relativePath = `./public/uploads/${fileName}`;

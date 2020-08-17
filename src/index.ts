@@ -8,19 +8,20 @@ import * as actors from './routes/actors';
 import * as profile from './routes/profile';
 import * as auth from './routes/auth';
 import passport from 'passport';
-import configurePassport from './utilities/authMiddleware';
+import * as authentication from './utilities/authMiddleware';
 dotenv.config();
 
 const app = express();
 const port = process.env.SERVER_PORT;
 
 app.use(express.json());
+app.use(passport.initialize());
 app.use('/public', express.static('public'));
 
-configurePassport();
+authentication.configurePassport();
 
 const apiRouter = express.Router();
-app.use('/api', passport.authenticate('bearer', { session: false }), apiRouter);
+app.use('/api', passport.authenticate('bearer', { session: false }) || passport.authenticate('google', { session: false }), apiRouter);
 root.register(apiRouter);
 movies.register(apiRouter);
 productionCompanies.register(apiRouter);

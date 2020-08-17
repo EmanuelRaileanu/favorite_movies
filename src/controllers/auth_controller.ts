@@ -4,6 +4,8 @@ import crypto from 'crypto';
 import { knex } from '../utilities/knexconfig';
 import transporter from '../utilities/nodemailerConfig';
 import dotenv from 'dotenv';
+import oauth2Client from '../utilities/oauth2ClientConfig';
+const {google} = require('googleapis');
 
 dotenv.config();
 
@@ -70,7 +72,7 @@ export const login = async (req: express.Request, res: express.Response) => {
         return;
     }
     
-    if(!await (await new User({email, password}).fetch({require: false})).get('isConfirmed')){
+    if(!(await new User({email, password}).fetch({require: false})).get('isConfirmed')){
         res.json('Failed to log in. Please confirm your account first.');
         return;
     }
@@ -171,7 +173,7 @@ export const resendConfirmationEmail = async (req:express.Request, res: express.
         return;
     }
 
-    const confirmationToken = await user.get('confirmationToken');
+    const confirmationToken = user.get('confirmationToken');
 
     if(!confirmationToken){
         res.json('This account has already been confirmed.');
@@ -186,4 +188,31 @@ export const resendConfirmationEmail = async (req:express.Request, res: express.
     });
 
     res.json('Confirmation email sent.');
-}
+};
+
+export const googleCallback = async (req:express.Request, res: express.Response) => {
+    const {tokens} = await oauth2Client.getToken(req.query.code);
+    
+    oauth2Client.setCredentials(tokens);
+    const userInfo = await google.oauth2('v2').userinfo.get({auth: oauth2Client});
+
+    const email = userInfo.data.email;
+    const user = await new User({ email }).fetch({require: false});
+    
+    if(!user){
+        await new User().save({
+            email,
+            name: userInfo.data.name,
+            isConfirmed: userInfo.data.verified_email,
+            bearerToken: tokens.access_token,
+            refreshToken: tokens.refresh_token
+        }, {method: 'insert'});
+        res.json(tokens.access_token);
+    }else{
+        await new User().where({email}).save({
+            bearerToken: tokens.access_token,
+            refreshToken: tokens.refresh_token
+        }, {method: 'update'});
+        res.json(tokens.access_token);
+    }
+};
