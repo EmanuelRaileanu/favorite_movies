@@ -19,7 +19,6 @@ app.use(passport.initialize());
 app.use('/public', express.static('public'));
 
 authentication.configurePassport();
-authentication.configureGoogleAuth(process.env.OAUTH_CLIENT_ID, process.env.OAUTH_CLIENT_SECRET, process.env.GOOGLE_CALLBACK_URL);
 
 const apiRouter = express.Router();
 app.use('/api', passport.authenticate('bearer', { session: false }) || passport.authenticate('google', { session: false }), apiRouter);

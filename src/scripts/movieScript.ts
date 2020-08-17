@@ -151,7 +151,7 @@ async function sendMovieListToDatabase(){
 
                 const actorsIds: number[] = [];
                 for(const actor of actors){
-                    if(!await new Actor({name: actor}).checkIfExists(trx)){
+                    if(!await new Actor(actor).checkIfExists(trx)){
                         actorsIds.push( (await new Actor().save(actor, {transacting: trx, method: 'insert'})).get('id'));
                     }
                     else{

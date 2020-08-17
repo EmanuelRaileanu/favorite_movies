@@ -1,7 +1,8 @@
+import express from 'express';
 import passport from 'passport';
 const BearerStrategy = require('passport-http-bearer');
 import { User } from '../entities/users';
-const GoogleStrategy = require('passport-google-oauth20').Strategy;
+import oauth2Client from './oauth2ClientConfig';
 
 export const configurePassport = () => passport.use(new BearerStrategy(
     async (token: any, done: any) => {
@@ -13,21 +14,12 @@ export const configurePassport = () => passport.use(new BearerStrategy(
     }
 ));
 
-export const configureGoogleAuth = (clientID: string | undefined, clientSecret: string | undefined, callbackURL: string | undefined) => passport.use(
-    new GoogleStrategy({
-        clientID,
-        clientSecret,
-        callbackURL
-    }, async (accessToken: any, refreshToken: any, profile: any, cb: any) => {
-        let user = await new User({name: profile.displayName}).fetch({require: false});
-        console.log(profile)
-        if(!user){
-            user = await new User().save({
-                name: profile.displayName,
-                accessToken,
-                refreshToken
-            }, {method: 'insert'});
-        }
-        return cb(null, user, { scope: 'all' });
-    })
-);
+export const googleAuth = async (req: express.Request, res: express.Response) => {
+    const url = await oauth2Client.generateAuthUrl({
+        access_type: 'offline',
+        prompt: 'consent',
+        scope: ['profile', 'email'] 
+    });
+
+    res.redirect(url);
+};
