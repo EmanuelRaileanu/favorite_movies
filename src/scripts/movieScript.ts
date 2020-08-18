@@ -14,7 +14,7 @@ import { MovieCategory } from '../entities/movie_categories';
 import { ProductionCrewType } from '../entities/production_crew_types';
 import { File } from '../entities/files';
 import download from '../utilities/downloadFile'; 
-import { sha256 } from '../utilities/sha256';
+import sjcl from 'sjcl';
 // run with npm run script
 
 let movieList: any[] = [];
@@ -179,7 +179,9 @@ async function sendMovieListToDatabase(){
                 const originalFileName = res.uri.pathname.substring(res.uri.pathname.lastIndexOf('/') + 1);
                 const extensionDotIndex = originalFileName.lastIndexOf('.');
                 const extension = originalFileName.substring(extensionDotIndex);
-                const fileName = sha256(originalFileName.substring(0, extensionDotIndex)) + extension;
+                const bitArray = sjcl.hash.sha256.hash(originalFileName.substring(0, extensionDotIndex));
+                const hash = sjcl.codec.hex.fromBits(bitArray);
+                const fileName = hash + extension;
                 const relativePath = `public/uploads/${fileName}`;
                 const poster = {
                     originalFileName,
