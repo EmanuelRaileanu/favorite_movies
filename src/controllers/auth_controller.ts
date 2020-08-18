@@ -5,7 +5,7 @@ import { knex } from '../utilities/knexconfig';
 import transporter from '../utilities/nodemailerConfig';
 import dotenv from 'dotenv';
 import oauth2Client from '../utilities/oauth2ClientConfig';
-import sjcl from 'sjcl';
+import bcrypt from 'bcrypt';
 const {google} = require('googleapis');
 
 dotenv.config();
@@ -47,15 +47,8 @@ export const register = async (req: express.Request, res: express.Response) => {
 
     const confirmationToken = crypto.randomBytes(20).toString('hex');
 
-    await transporter.sendMail({
-        from: "'Api', <mail@api.com>",
-        to: email,
-        subject: 'Confirm your account',
-        text: `Please confirm your new account. Confirmation token: ${confirmationToken}`
-    });
-
-    const passwordBitArray = sjcl.hash.sha256.hash(password);
-    const hashedPassword = sjcl.codec.hex.fromBits(passwordBitArray);
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
     
     const userEntry = {
         email,
@@ -66,6 +59,13 @@ export const register = async (req: express.Request, res: express.Response) => {
     };
 
     await new User().save(userEntry, {method: 'insert'});
+
+    await transporter.sendMail({
+        from: "'Api', <mail@api.com>",
+        to: email,
+        subject: 'Confirm your account',
+        text: `Please confirm your new account. Confirmation token: ${confirmationToken}`
+    });
 
     res.json('Registered successfully!');
 };
@@ -89,10 +89,21 @@ export const login = async (req: express.Request, res: express.Response) => {
         return;
     }
 
-    const passwordBitArray = sjcl.hash.sha256.hash(password);
-    const hashedPassword = sjcl.codec.hex.fromBits(passwordBitArray);
+    const user = await new User({email}).fetch({require: false});
+
+    if(!user){
+        res.json('Incorrect email!');
+        return;
+    }
+
+    const checkIfPasswordIsCorrect = await bcrypt.compare(password, user.get('password'));
+
+    if(!checkIfPasswordIsCorrect){
+        res.json('Incorrect password!');
+        return;
+    }
     
-    if(!(await new User({email, password: hashedPassword}).fetch({require: false})).get('isConfirmed')){
+    if(!user.get('isConfirmed') && checkIfPasswordIsCorrect){
         res.json('Failed to log in. Please confirm your account first.');
         return;
     }
@@ -100,7 +111,7 @@ export const login = async (req: express.Request, res: express.Response) => {
     const bearerToken = crypto.randomBytes(20).toString('hex');
 
     await knex.transaction(async trx => {
-        const user = await new User({email, password: hashedPassword}).fetch({require: false, transacting: trx});
+        const user = await new User({email}).fetch({require: false, transacting: trx});
 
         if(user.get('bearerToken') !== null){
             res.json(`You are already logged in! Bearer token: ${user.get('bearerToken')}`);
