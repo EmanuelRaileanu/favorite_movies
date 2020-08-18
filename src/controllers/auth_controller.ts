@@ -5,6 +5,7 @@ import { knex } from '../utilities/knexconfig';
 import transporter from '../utilities/nodemailerConfig';
 import dotenv from 'dotenv';
 import oauth2Client from '../utilities/oauth2ClientConfig';
+import sjcl from 'sjcl';
 const {google} = require('googleapis');
 
 dotenv.config();
@@ -14,6 +15,12 @@ export const register = async (req: express.Request, res: express.Response) => {
 
     if(!name || !email || !password|| !confirmPassword || !dateOfBirth){
         res.status(400).json('Bad request!');
+        return;
+    }
+
+    const emailReg = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    if(!email.match(emailReg)){
+        res.json('Invalid email format. Example format: emailaddress@gmail.com');
         return;
     }
 
@@ -46,10 +53,13 @@ export const register = async (req: express.Request, res: express.Response) => {
         subject: 'Confirm your account',
         text: `Please confirm your new account. Confirmation token: ${confirmationToken}`
     });
+
+    const passwordBitArray = sjcl.hash.sha256.hash(password);
+    const hashedPassword = sjcl.codec.hex.fromBits(passwordBitArray);
     
     const userEntry = {
         email,
-        password,
+        password: hashedPassword,
         name,
         dateOfBirth, 
         confirmationToken
@@ -67,25 +77,40 @@ export const login = async (req: express.Request, res: express.Response) => {
         res.json('Please enter your email.');
         return;
     }
-    else if(!password){
+
+    const emailReg = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    if(!email.match(emailReg)){
+        res.json('Invalid email format. Example format: emailaddress@gmail.com');
+        return;
+    }
+
+    if(!password){
         res.json('Please enter your password.');
         return;
     }
+
+    const passwordBitArray = sjcl.hash.sha256.hash(password);
+    const hashedPassword = sjcl.codec.hex.fromBits(passwordBitArray);
     
-    if(!(await new User({email, password}).fetch({require: false})).get('isConfirmed')){
+    if(!(await new User({email, password: hashedPassword}).fetch({require: false})).get('isConfirmed')){
         res.json('Failed to log in. Please confirm your account first.');
         return;
     }
 
     const bearerToken = crypto.randomBytes(20).toString('hex');
-    let user: any;
 
     await knex.transaction(async trx => {
-        user = await new User({email, password}).fetch({require: false, transacting: trx});
+        const user = await new User({email, password: hashedPassword}).fetch({require: false, transacting: trx});
+
+        if(user.get('bearerToken') !== null){
+            res.json(`You are already logged in! Bearer token: ${user.get('bearerToken')}`);
+            return;
+        }
+        
         await user.save({bearerToken}, {transacting: trx, method: 'update'});
     });
 
-    res.json(user.get('bearerToken'));
+    res.json(bearerToken);
 };
 
 export const logout = async (req: any, res: express.Response) => {
