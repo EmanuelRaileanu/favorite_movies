@@ -1,6 +1,7 @@
+import * as Knex from "knex";
 
-exports.up = function(knex) {
-    return knex.schema.createTable('actor_photos', table => {
+export async function up(knex: Knex): Promise<void> {
+    await knex.schema.createTable('actor_photos', table => {
         table.increments('id').primary();
         table.string('originalFileName');
         table.string('mimeType');
@@ -8,7 +9,7 @@ exports.up = function(knex) {
         table.integer('size');
         table.string('fileName');
     })
-    .createTable('actors', table => {
+    await knex.schema.createTable('actors', table => {
         table.increments('id').primary();
         table.string('firstName');
         table.string('lastName');
@@ -20,15 +21,15 @@ exports.up = function(knex) {
         table.text('shortDescription');
         table.integer('recentPhotoId').unsigned().references('id').inTable('actor_photos');
     })
-    .createTable('movies_actors', table => {
+    await knex.schema.createTable('movies_actors', table => {
         table.integer('actorId').unsigned().references('id').inTable('actors');
         table.integer('movieId').unsigned().references('id').inTable('movies');
     })
     
 };
 
-exports.down = function(knex) {
-    return knex.schema.dropTable('movies_actors')
-        .dropTable('actors')
-        .dropTable('actor_photos')
+export async function down(knex: Knex): Promise<void> {
+    await knex.schema.dropTable('movies_actors')
+    await knex.schema.dropTable('actors')
+    await knex.schema.dropTable('actor_photos')
 };

@@ -1,6 +1,6 @@
 import Knex from 'knex';
-import * as config from '../../knexfile.js';
 import Bookshelf from 'bookshelf';
+const config = require('../../knexfile');
 
 export const knex = Knex(config.development);
 

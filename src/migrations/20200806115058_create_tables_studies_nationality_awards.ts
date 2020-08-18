@@ -1,16 +1,18 @@
-exports.up = function(knex) {
-    return knex.schema.createTable('studies', table => {
+import * as Knex from "knex";
+
+export async function up(knex: Knex): Promise<void> {
+    await knex.schema.createTable('studies', table => {
         table.increments('id').primary();
         table.string('institution');
         table.string('degree');
         table.integer('graduationYear');
         table.integer('actorId').unsigned().references('id').inTable('actors');
     })
-    .createTable('nationalities', table => {
+    await knex.schema.createTable('nationalities', table => {
         table.increments('id').primary();
         table.string('nationality').unique();
     })
-    .createTable('awards', table => {
+    await knex.schema.createTable('awards', table => {
         table.increments('id');
         table.string('award');
         table.integer('year');
@@ -18,7 +20,7 @@ exports.up = function(knex) {
         table.string('movieCharacter');
         table.integer('actorId').unsigned().references('id').inTable('actors');
     })
-    .table('actors', table => {
+    await knex.schema.table('actors', table => {
         table.dropColumn('studies');
         table.dropColumn('nationality');
         table.dropColumn('awards');
@@ -26,14 +28,15 @@ exports.up = function(knex) {
     })
 };
 
-exports.down = function(knex) {
-    return knex.schema.table('actors', table => {
+export async function down(knex: Knex): Promise<void> {
+    await knex.schema.table('actors', table => {
         table.text('studies');
         table.string('nationality');
         table.text('awards');
-        table.dropForeign('actorId');
+        table.dropForeign(['actorId']);
+        table.dropColumn('actorId');
     })
-    .dropTable('awards')
-    .dropTable('nationalities')
-    .dropTable('studies')
+    await knex.schema.dropTable('awards')
+    await knex.schema.dropTable('nationalities')
+    await knex.schema.dropTable('studies')
 };
