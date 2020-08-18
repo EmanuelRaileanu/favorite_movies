@@ -79,7 +79,6 @@ export const postActor = async (req: express.Request, res: express.Response) => 
             recentPhotoId: imageId,
             nationalityId: await new Nationality({nationality: String(req.body.nationality)}).fetch({require: false, transacting: trx}).get('nationality') || await new Nationality({nationality: 'Other'}).getId(trx)
         };
-        console.log(actor)
 
         id = (await new Actor().save(actor, {
             transacting: trx,

@@ -1,11 +1,5 @@
-import dotenv from 'dotenv';
-import Knex from 'knex';
-import * as config from '../../knexfile.js';
+import { knex } from './knexconfig';
 import { Movie } from '../entities/movies';
-
-dotenv.config();
-
-const knex = Knex(config.development);
 
 export const getLength = async (table: string) => parseInt(String((await knex(table).count('id'))[0]['count(`id`)']), 10);
 

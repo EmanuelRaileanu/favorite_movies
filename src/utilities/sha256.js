@@ -1,5 +1,4 @@
 export var sha256 = (ascii) => {
-	/* tslint:disable:no-bitwise */
 	function rightRotate(value, amount) {
 		return (value>>>amount) | (value<<(32 - amount));
 	};
@@ -97,5 +96,4 @@ export var sha256 = (ascii) => {
 		}
 	}
 	return result;
-	/* tslint:enable:no-bitwise */
 };
