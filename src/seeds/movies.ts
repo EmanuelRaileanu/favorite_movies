@@ -1,10 +1,12 @@
 const dotenv = require('dotenv');
 const config = require('../../knexfile');
+import * as type from '../utilities/customTypes';
+import * as Knex from 'knex';
 
 dotenv.config();
 const knex = require('knex')(config.development);
 
-async function checkUniqueTitle(movie){
+async function checkUniqueTitle(movie: type.Movie){
   const movieTitle = await knex('movies').where({title: movie.title}).first();
   if(!movieTitle){
     return true;
@@ -12,7 +14,7 @@ async function checkUniqueTitle(movie){
   return false;
 }
 
-async function checkUniqueName(company){
+async function checkUniqueName(company: string){
   const companyName = await knex('production_companies').where({ name: company }).first();
   if(!companyName){
     return true;
@@ -20,15 +22,15 @@ async function checkUniqueName(company){
   return false;
 }
 
-async function checkUniqueCategory(category){
-  const entry = await knex('movie_categories').where({ category: category }).first();
+async function checkUniqueCategory(category: string){
+  const entry = await knex('movie_categories').where({ category }).first();
   if(!entry){
     return true;
   }
   return false;
 }
 
-async function checkUniqueMovieCategoryEntry(entry){
+async function checkUniqueMovieCategoryEntry(entry: {movieId: number, categoryId: number}){
   const find = await knex('movies_movie_categories').where({ movieId: entry.movieId }).where({ categoryId: entry.categoryId}).first();
   if(!find){
     return true;
@@ -36,7 +38,7 @@ async function checkUniqueMovieCategoryEntry(entry){
   return false;
 }
 
-async function checkUniqueNationality(nationality){
+async function checkUniqueNationality(nationality: string){
   const find = await knex('nationalities').where({ nationality }).first();
   if(!find){
     return true;
@@ -44,7 +46,7 @@ async function checkUniqueNationality(nationality){
   return false;
 }
 
-async function checkUniqueInstitution(institution){
+async function checkUniqueInstitution(institution: string){
   const find = await knex('institutions').where({ institution }).first();
   if(!find){
     return true;
@@ -52,7 +54,7 @@ async function checkUniqueInstitution(institution){
   return false;
 }
 
-async function checkUniqueDegree(degree){
+async function checkUniqueDegree(degree: string){
   const find = await knex('degrees').where({ degree }).first();
   if(!find){
     return true;
@@ -60,7 +62,7 @@ async function checkUniqueDegree(degree){
   return false;
 }
 
-async function checkUniqueAward(awardName){
+async function checkUniqueAward(awardName: string){
   const find = await knex('award_list').where({ awardName }).first();
   if(!find){
     return true;
@@ -68,7 +70,7 @@ async function checkUniqueAward(awardName){
   return false;
 }
 
-async function checkUniqueCountry(countryName){
+async function checkUniqueCountry(countryName: string){
   const find = await knex('countries').where({ countryName }).first();
   if(!find){
     return true;
@@ -76,7 +78,7 @@ async function checkUniqueCountry(countryName){
   return false;
 }
 
-async function checkUniqueLocation(location){
+async function checkUniqueLocation(location: string){
   const find = await knex('locations').where({ location }).first();
   if(!find){
     return true;
@@ -84,7 +86,7 @@ async function checkUniqueLocation(location){
   return false;
 }
 
-async function checkUniqueStreet(streetName){
+async function checkUniqueStreet(streetName: string){
   const find = await knex('streets').where({ streetName }).first();
   if(!find){
     return true;
@@ -92,7 +94,7 @@ async function checkUniqueStreet(streetName){
   return false;
 }
 
-async function checkUniqueAddress(address){
+async function checkUniqueAddress(address: type.Address){
   const find = await knex('addresses').where(address);
   if(!find){
     return true;
@@ -100,7 +102,7 @@ async function checkUniqueAddress(address){
   return false;
 }
 
-async function checkUniqueSet(movieSetName){
+async function checkUniqueSet(movieSetName: string){
   const find = await knex('movie_sets').where({ movieSetName }).first();
   if(!find){
     return true;
@@ -108,7 +110,7 @@ async function checkUniqueSet(movieSetName){
   return false;
 }
 
-async function checkUniqueProductionCrewType(type){
+async function checkUniqueProductionCrewType(type: string){
   const find = await knex('production_crew_types').where({ type }).first();
   if(!find){
     return true;
@@ -116,7 +118,7 @@ async function checkUniqueProductionCrewType(type){
   return false;
 }
 
-async function checkUniqueProductionCrewMember(name){
+async function checkUniqueProductionCrewMember(name: type.Name){
   const find = await knex('production_crew').where(name).first();
   if(!find){
     return true;
@@ -124,7 +126,7 @@ async function checkUniqueProductionCrewMember(name){
   return false;
 }
 
-async function checkUniqueMovieScene(movieSceneName){
+async function checkUniqueMovieScene(movieSceneName: string){
   const find = await knex('movie_scenes').where({ movieSceneName }).first();
   if(!find){
     return true;
@@ -132,7 +134,7 @@ async function checkUniqueMovieScene(movieSceneName){
   return false;
 }
 
-async function checkForNoCategory(id){
+async function checkForNoCategory(id: string){
   const find = await knex('movies_movie_categories').where({ movieId: id }).first();
   if(!find){
     return true;
@@ -140,7 +142,7 @@ async function checkForNoCategory(id){
   return false;
 }
 
-async function checkUniqueProductionCrewMovieEntry(entry){
+async function checkUniqueProductionCrewMovieEntry(entry: {productionCrewMemberId: number, movieId: number}){
   const find = await knex('production_crew_movies').where(entry).first();
   if(!find){
     return true;
@@ -148,7 +150,7 @@ async function checkUniqueProductionCrewMovieEntry(entry){
   return false;
 }
 
-async function checkUniqueActor(name){
+async function checkUniqueActor(name: type.Name){
   const find = await knex('actors').where(name).first();
   if(!find){
     return true;
@@ -156,7 +158,7 @@ async function checkUniqueActor(name){
   return false;
 }
 
-async function checkUniqueActorMovie(entry){
+async function checkUniqueActorMovie(entry: {actorId: number, movieId: number}){
   const find = await knex('movies_actors').where(entry).first();
   if(!find){
     return true;
@@ -164,7 +166,7 @@ async function checkUniqueActorMovie(entry){
   return false;
 }
 
-async function checkUniqueProductionCrewMovieSceneEntry(entry){
+async function checkUniqueProductionCrewMovieSceneEntry(entry: {productionCrewMemberId: number, movieSceneId: number}){
   const find = await knex('production_crew_movie_scenes').where(entry);
   if(!find){
     return true;
@@ -172,7 +174,7 @@ async function checkUniqueProductionCrewMovieSceneEntry(entry){
   return false;
 }
 
-async function checkUniqueActorStudies(entry){
+async function checkUniqueActorStudies(entry: type.Studies){
   const find = await knex('studies').where(entry).first();
   if(!find){
     return true;
@@ -180,7 +182,7 @@ async function checkUniqueActorStudies(entry){
   return false;
 }
 
-async function checkUniqueActorAward(award){
+async function checkUniqueActorAward(award: type.Award){
   const find = await knex('awards').where(award).first();
   if(!find){
     return true;
@@ -188,7 +190,7 @@ async function checkUniqueActorAward(award){
   return false;
 }
 
-async function checkUniqueActorMovieScene(entry){
+async function checkUniqueActorMovieScene(entry: {actorId: number, sceneId: number}){
   const find = await knex('actors_movie_scenes').where(entry).first();
   if(!find){
     return true;
@@ -196,7 +198,7 @@ async function checkUniqueActorMovieScene(entry){
   return false;
 }
 
-async function checkUniqueLanguage(language){
+async function checkUniqueLanguage(language: string){
   const find = await knex('languages').where({language}).first();
   if(!find){
     return true;
@@ -204,7 +206,7 @@ async function checkUniqueLanguage(language){
   return false;
 }
 
-async function checkUniqueMovieLanguageEntry(entry){
+async function checkUniqueMovieLanguageEntry(entry: {movieId: number, languageId: number}){
   const find = await knex('movies_languages').where(entry).first();
   if(!find){
     return true;
@@ -212,7 +214,7 @@ async function checkUniqueMovieLanguageEntry(entry){
   return false;
 }
 
-async function checkUniqueContentRating(rating){
+async function checkUniqueContentRating(rating: string){
   const find = await knex('content_ratings').where({rating}).first();
   if(!find){
     return true;
@@ -220,7 +222,7 @@ async function checkUniqueContentRating(rating){
   return false;
 }
 
-async function checkUniqueProductionCrewAssociatedTypeEntry(entry){
+async function checkUniqueProductionCrewAssociatedTypeEntry(entry: {productionCrewMemberId: number, typeId: number}){
   const find = await knex('production_crew_associated_types').where(entry).first();
   if(!find){
     return true;
@@ -228,73 +230,73 @@ async function checkUniqueProductionCrewAssociatedTypeEntry(entry){
   return false;
 }
 
-async function getMovieId(title){
-  return (await knex('movies').where({title: title}).first()).id;
+async function getMovieId(title: string){
+  return (await knex('movies').where({title}).first()).id;
 }
 
-async function getProductionCompanyId(name){
+async function getProductionCompanyId(name: string){
   return (await knex('production_companies').where({name}).first()).id;
 }
 
-async function getCategoryId(category){
-  return (await knex('movie_categories').where({category: category}).first()).id;
+async function getCategoryId(category: string){
+  return (await knex('movie_categories').where({category}).first()).id;
 }
 
-async function getNationalityId(nationality){
+async function getNationalityId(nationality: string){
   return (await knex('nationalities').where({nationality}).first()).id;
 }
 
-async function getActorId(name){
+async function getActorId(name: type.Name){
   return (await knex('actors').where(name).first()).id;
 }
 
-async function getCountryId(countryName){
+async function getCountryId(countryName: string){
   return (await knex('countries').where({countryName}).first()).id;
 }
 
-async function getLocationId(location){
+async function getLocationId(location: string){
   return (await knex('locations').where({location}).first()).id;
 }
 
-async function getProductionCrewTypeId(type){
+async function getProductionCrewTypeId(type: string){
   return (await knex('production_crew_types').where({type}).first()).id;
 }
 
-async function getSetId(movieSetName){
+async function getSetId(movieSetName: string){
   return (await knex('movie_sets').where({movieSetName}).first()).id;
 }
 
-async function getProductionCrewMemberId(name){
+async function getProductionCrewMemberId(name: type.Name){
   return (await knex('production_crew').where(name).first()).id;
 }
 
-async function getMovieSceneId(movieSceneName){
+async function getMovieSceneId(movieSceneName: string){
   return (await knex('movie_scenes').where({movieSceneName}).first()).id;
 }
 
-async function getInstitutionId(institution){
+async function getInstitutionId(institution: string){
   return (await knex('institutions').where({institution}).first()).id;
 }
 
-async function getAwardId(awardName){
+async function getAwardId(awardName: string){
   return (await knex('award_list').where({awardName}).first()).id;
 }
 
-async function getDegreeId(degree){
+async function getDegreeId(degree: string){
   return (await knex('degrees').where({degree}).first()).id;
 }
 
-async function getLanguageId(language){
+async function getLanguageId(language: string){
   return (await knex('languages').where({language}).first()).id;
 }
 
-async function getContentRatingId(rating){
+async function getContentRatingId(rating: string){
   return (await knex('content_ratings').where({rating}).first()).id;
 }
 
-exports.seed = async function(knex) {
+exports.seed = async function(knex: Knex) {
 
-  const productionCompanies = {
+  const productionCompanies: {[companyName: string]: {name: string, id?: number}} = {
     marvel: { name: 'Marvel Studios'},
     other: { name: 'Other'},
     summit: { name: 'Summit Entertainment'}
@@ -302,7 +304,7 @@ exports.seed = async function(knex) {
 
   for(let i =0; i < Object.keys(productionCompanies).length; i++){
     if(await checkUniqueName(productionCompanies[Object.keys(productionCompanies)[i]].name)){
-      let id = await knex('production_companies').insert(productionCompanies[Object.keys(productionCompanies)[i]]);
+      let id: number = await knex('production_companies').insert(productionCompanies[Object.keys(productionCompanies)[i]]);
       productionCompanies[Object.keys(productionCompanies)[i]].id = id;
     }
   }
@@ -316,7 +318,7 @@ exports.seed = async function(knex) {
       budget: 160000000.00,
       gross: 828322032.00,
       overallRating: 8.8,
-      ProductionCompanyId: parseInt(productionCompanies.other.id, 10)
+      ProductionCompanyId: productionCompanies.other.id
     },
     {
       title: 'John Wick',
@@ -326,7 +328,7 @@ exports.seed = async function(knex) {
       budget: 40000000.00,
       gross: 86013056.00,
       overallRating: 7.4,
-      ProductionCompanyId: parseInt(productionCompanies.summit.id, 10)
+      ProductionCompanyId: productionCompanies.summit.id
     },
     {
       title: 'The Lord of the Rings: The Fellowship of the Ring',
@@ -336,7 +338,7 @@ exports.seed = async function(knex) {
       budget: 93000000.00,
       gross: 883726270.00,
       overallRating: 8.8,
-      ProductionCompanyId: parseInt(productionCompanies.other.id, 10)
+      ProductionCompanyId: productionCompanies.other.id
     },
     {
       title: 'Avengers: Infinity War',
@@ -346,7 +348,7 @@ exports.seed = async function(knex) {
       budget: 316000000.00,
       gross: 2048359754.00,
       overallRating: 8.8,
-      ProductionCompanyId: parseInt(productionCompanies.marvel.id, 10)
+      ProductionCompanyId: productionCompanies.marvel.id
     },
     {
       title: 'The Dark Knight',
@@ -356,7 +358,7 @@ exports.seed = async function(knex) {
       budget: 180000000.00,
       gross: 1003045358.00,
       overallRating: 9.0,
-      ProductionCompanyId: parseInt(productionCompanies.other.id, 10)
+      ProductionCompanyId: productionCompanies.other.id
     },
     {
       title: 'The Hobbit: An Unexpected Journey',
@@ -366,7 +368,7 @@ exports.seed = async function(knex) {
       budget: 180000000.00,
       gross: 1017003568.00,
       overallRating: 7.8,
-      ProductionCompanyId: parseInt(productionCompanies.other.id, 10)
+      ProductionCompanyId: productionCompanies.other.id
     },
     {
       title: 'Thor: Ragnarok',
@@ -376,7 +378,7 @@ exports.seed = async function(knex) {
       budget: 180000000.00,
       gross: 853977126.00,
       overallRating: 7.9,
-      ProductionCompanyId: parseInt(productionCompanies.marvel.id, 10)
+      ProductionCompanyId: productionCompanies.marvel.id
     },
     {
       title: 'Interstellar',
@@ -386,7 +388,7 @@ exports.seed = async function(knex) {
       budget: 165000000.00,
       gross: 677463813.00,
       overallRating: 8.6,
-      ProductionCompanyId: parseInt(productionCompanies.other.id, 10)
+      ProductionCompanyId: productionCompanies.other.id
     },
     {
       title: 'The Hangover',
@@ -396,7 +398,7 @@ exports.seed = async function(knex) {
       budget: 35000000.00,
       gross: 468812793.00,
       overallRating: 7.7,
-      ProductionCompanyId: parseInt(productionCompanies.other.id, 10)
+      ProductionCompanyId: productionCompanies.other.id
     },
     {
       title: 'Anchorman: The Legend of Ron Burgundy',
@@ -406,7 +408,7 @@ exports.seed = async function(knex) {
       budget: 26000000.00,
       gross: 90649730.00,
       overallRating: 7.2,
-      ProductionCompanyId: parseInt(productionCompanies.other.id, 10)
+      ProductionCompanyId: productionCompanies.other.id
     }
   ];
 

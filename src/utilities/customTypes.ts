@@ -12,7 +12,7 @@ export interface Movie{
     gross?: number,
     overallRating?: number,
     releaseDate?: string,
-    ProductionCompanyId: number,
+    ProductionCompanyId: number | undefined,
     posterId? : number,
     categories?: Category[]
 }

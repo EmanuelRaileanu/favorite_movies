@@ -1,6 +1,6 @@
 import express from 'express';
 import multer, { DiskStorageOptions } from 'multer';
-import { sha256 } from '../utilities/sha256';
+import sjcl from 'sjcl';
 
 const storage = multer.diskStorage({
     destination: (req: express.Request, file, cb) => {
@@ -9,7 +9,9 @@ const storage = multer.diskStorage({
     filename: (req: express.Request, file, cb) => {
         const extensionDotIndex = file.originalname.lastIndexOf('.');
         const extension = file.originalname.substring(extensionDotIndex);
-        cb(null, sha256(file.originalname.substring(0, extensionDotIndex)) + extension);
+        const bitArray = sjcl.hash.sha256.hash(file.originalname.substring(0, extensionDotIndex));
+        const hash = sjcl.codec.hex.fromBits(bitArray);
+        cb(null, hash + extension);
     },
 });
 
