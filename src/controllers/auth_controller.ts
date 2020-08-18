@@ -103,23 +103,14 @@ export const login = async (req: express.Request, res: express.Response) => {
         return;
     }
     
-    if(!user.get('isConfirmed') && checkIfPasswordIsCorrect){
+    if(!user.get('isConfirmed')){
         res.json('Failed to log in. Please confirm your account first.');
         return;
     }
 
     const bearerToken = crypto.randomBytes(20).toString('hex');
 
-    await knex.transaction(async trx => {
-        const user = await new User({email}).fetch({require: false, transacting: trx});
-
-        if(user.get('bearerToken') !== null){
-            res.json(`You are already logged in! Bearer token: ${user.get('bearerToken')}`);
-            return;
-        }
-        
-        await user.save({bearerToken}, {transacting: trx, method: 'update'});
-    });
+    await user.save({bearerToken}, {method: 'update'});
 
     res.json(bearerToken);
 };
@@ -140,7 +131,7 @@ export const confirmAccount = async (req:express.Request, res: express.Response)
     const confirmationToken = req.body.token;
 
     await knex.transaction(async trx => {
-        const user = await new User().where({confirmationToken}).fetch({require: false, transacting: trx});
+        const user = await new User({confirmationToken}).fetch({require: false, transacting: trx});
         if(!user){
             res.json('Error: Account does not exist.');
             return;
