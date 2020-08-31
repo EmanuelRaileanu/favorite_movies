@@ -7,49 +7,34 @@ import dotenv from 'dotenv';
 import oauth2Client from '../utilities/oauth2ClientConfig';
 import bcrypt from 'bcrypt';
 const {google} = require('googleapis');
+import Joi from 'joi';
+
+const EMAIL_REGEX = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+
+const userRegisterSchema = Joi.object().keys({
+    email: Joi.string().regex(EMAIL_REGEX).email().required(),
+    name: Joi.string().required(),
+    password: Joi.string().required(),
+    confirmPassword: Joi.string().valid(Joi.ref('password')).required(),
+    dateOfBirth: Joi.date().required().iso()
+});
+
+const userLoginSchema = Joi.object().keys({
+    email: Joi.string().regex(EMAIL_REGEX).email().required(),
+    password: Joi.string().required()
+});
 
 dotenv.config();
 
 export const register = async (req: express.Request, res: express.Response) => {
-    const {name, dateOfBirth, email, password, confirmPassword} = req.body;
-
-    if(!name || !email || !password|| !confirmPassword || !dateOfBirth){
-        res.status(400).json('Bad request!');
-        return;
+    await userRegisterSchema.validateAsync(req.body);
+    const {name, dateOfBirth, email, password} = req.body;
+    if(await new User({email}).checkIfExists()){
+        throw 'An user with this email already exists!';
     }
-
-    const emailReg = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-    if(!email.match(emailReg)){
-        res.json('Invalid email format. Example format: emailaddress@gmail.com');
-        return;
-    }
-
-    const dateReg = /^\d{4}([./-])\d{2}\1\d{2}$/;
-    if(!dateOfBirth.match(dateReg)){
-        res.json('Incorrect date format. Hint: YYYY-MM-DD');
-        return;
-    }
-
-    if(password.length < 5){
-        res.json('The password should be at lest 5 characters long!');
-        return;
-    }
-
-    if(password !== confirmPassword){
-        res.json('Passwords do not match!');
-        return;
-    }
-
-    if(await new User({email}).fetch({require: false})){
-        res.json('An user with this email address already exists!');
-        return;
-    }
-
     const confirmationToken = crypto.randomBytes(20).toString('hex');
-
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-    
     const userEntry = {
         email,
         password: hashedPassword,
@@ -71,23 +56,9 @@ export const register = async (req: express.Request, res: express.Response) => {
 };
 
 export const login = async (req: express.Request, res: express.Response) => {
+    await userLoginSchema.validateAsync(req.body);
+
     const {email, password} = req.body;
-
-    if(!email){
-        res.json('Please enter your email.');
-        return;
-    }
-
-    const emailReg = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-    if(!email.match(emailReg)){
-        res.json('Invalid email format. Example format: emailaddress@gmail.com');
-        return;
-    }
-
-    if(!password){
-        res.json('Please enter your password.');
-        return;
-    }
 
     const user = await new User({email}).fetch({require: false});
 

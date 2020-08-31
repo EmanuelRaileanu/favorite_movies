@@ -7,12 +7,25 @@ import { File } from '../entities/files';
 import { Award } from '../entities/awards';
 import { Studies } from '../entities/studies';
 import { Nationality } from '../entities/nationalities';
-import { BaseModel } from '../entities/base_model';
 import * as type from '../utilities/customTypes';
 import { Institution } from '../entities/institutions';
 import { Degree } from '../entities/degrees';
 import { AwardName } from '../entities/award_list';
 import { Movie } from '../entities/movies';
+import Joi from 'joi';
+
+const actorSchema = Joi.object().keys({
+    firstName: Joi.string().min(3).max(30).required(),
+    lastName: Joi.string().min(3).max(30).required(),
+    fbProfileLink: Joi.string(),
+    shortDescription: Joi.string(),
+    nationalityId: Joi.number(),
+    nationality: Joi.string(),
+    dateOfBirth: Joi.date(),
+    movies: Joi.array().items(Joi.object({id: Joi.number()})),
+    studies: Joi.array().items(Joi.object({graduationYear: Joi.date(), institutionId: Joi.number(), degreeId: Joi.number()})),
+    awards: Joi.array().items(Joi.object({year: Joi.number(), movie: Joi.string(), movieCharacter: Joi.string(), awardId: Joi.number()}))
+});
 
 const deleteFile = util.promisify(fs.unlink);
 
@@ -45,10 +58,7 @@ export const getActorById = async (req: express.Request, res: express.Response) 
 };
 
 export const postActor = async (req: express.Request, res: express.Response) => {
-    if(!req.body.firstName || !req.body.lastName){
-        res.status(400).json('Bad request');
-        return;
-    }
+    await actorSchema.validateAsync(req.body);
 
     let id: number | undefined;
     await knex.transaction(async trx => {

@@ -1,4 +1,3 @@
-import { bookshelf } from '../utilities/knexconfig';
 import { ProductionCompany } from './production_companies';
 import { MovieCategory } from './movie_categories';
 import { File } from './files';
@@ -12,9 +11,12 @@ import { BaseModel } from './base_model';
 
 export class Movie extends BaseModel{
     [x: string]: any;
-
     get tableName(){
         return 'movies';
+    }
+
+    get length(){
+        return this.count();
     }
 
     // many-to-many relationship with MovieCategory
