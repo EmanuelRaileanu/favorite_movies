@@ -7,27 +7,10 @@ import dotenv from 'dotenv';
 import oauth2Client from '../utilities/oauth2ClientConfig';
 import bcrypt from 'bcrypt';
 const {google} = require('googleapis');
-import Joi from 'joi';
-
-const EMAIL_REGEX = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-
-const userRegisterSchema = Joi.object().keys({
-    email: Joi.string().regex(EMAIL_REGEX).email().required(),
-    name: Joi.string().required(),
-    password: Joi.string().required(),
-    confirmPassword: Joi.string().valid(Joi.ref('password')).required(),
-    dateOfBirth: Joi.date().required().iso()
-});
-
-const userLoginSchema = Joi.object().keys({
-    email: Joi.string().regex(EMAIL_REGEX).email().required(),
-    password: Joi.string().required()
-});
 
 dotenv.config();
 
 export const register = async (req: express.Request, res: express.Response) => {
-    await userRegisterSchema.validateAsync(req.body);
     const {name, dateOfBirth, email, password} = req.body;
     if(await new User({email}).checkIfExists()){
         throw 'An user with this email already exists!';
@@ -56,7 +39,6 @@ export const register = async (req: express.Request, res: express.Response) => {
 };
 
 export const login = async (req: express.Request, res: express.Response) => {
-    await userLoginSchema.validateAsync(req.body);
 
     const {email, password} = req.body;
 
