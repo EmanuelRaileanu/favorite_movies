@@ -8,7 +8,7 @@ async function main(){
         console.log('There are no failed jobs');
         return;
     }
-    await Promise.all(failedJobs.map(async (failedJob: any) => {
+    for(let failedJob of failedJobs){
         const newJob = {
             type: failedJob.type,
             email: failedJob.email,
@@ -19,7 +19,7 @@ async function main(){
         job.on('succeeded', async () => {
             await new Job().where({id: failedJob.id}).save({status: 'succeeded'}, {method: 'update'});
         });
-    }));
+    }
 };
 
 main();
