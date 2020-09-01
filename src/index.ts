@@ -26,7 +26,7 @@ app.use('/public', express.static('public'));
 authentication.configurePassport();
 
 const apiRouter = express.Router();
-app.use('/api', passport.authenticate('bearer', { session: false }) || passport.authenticate('google', { session: false }), apiRouter);
+app.use('/api', passport.authenticate('bearer', { session: false }), apiRouter);
 root.register(apiRouter);
 movies.register(apiRouter);
 productionCompanies.register(apiRouter);

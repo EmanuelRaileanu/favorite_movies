@@ -2,13 +2,28 @@ import express from 'express';
 import { User } from '../entities/users';
 import crypto from 'crypto'; 
 import { knex } from '../utilities/knexconfig';
-import transporter from '../utilities/nodemailerConfig';
 import dotenv from 'dotenv';
 import oauth2Client from '../utilities/oauth2ClientConfig';
 import bcrypt from 'bcrypt';
 const {google} = require('googleapis');
+import queue from '../utilities/queueConfig';
+import Job from '../entities/jobs';
 
 dotenv.config();
+
+async function saveJobInDb(job: any){
+    let jobEntry = {
+        id: job.id,
+        status: 'succeeded',
+        type: job.data.type,
+        email: job.data.email,
+        token: job.data.token
+    };
+    job.on('failed', () => {
+        jobEntry.status = 'failed';
+    });
+    await new Job(jobEntry).save();
+};
 
 export const register = async (req: express.Request, res: express.Response) => {
     const {name, dateOfBirth, email, password} = req.body;
@@ -28,18 +43,14 @@ export const register = async (req: express.Request, res: express.Response) => {
 
     await new User().save(userEntry, {method: 'insert'});
 
-    await transporter.sendMail({
-        from: "'Api', <mail@api.com>",
-        to: email,
-        subject: 'Confirm your account',
-        text: `Please confirm your new account. Confirmation token: ${confirmationToken}`
-    });
+    const job = queue.createJob({type: 'account_confirmation', email, token: confirmationToken});
+    job.save();
+    await saveJobInDb(job);
 
     res.json('Registered successfully!');
 };
 
 export const login = async (req: express.Request, res: express.Response) => {
-
     const {email, password} = req.body;
 
     const user = await new User({email}).fetch({require: false});
@@ -81,7 +92,7 @@ export const logout = async (req: any, res: express.Response) => {
 };
 
 export const confirmAccount = async (req:express.Request, res: express.Response) => {
-    const confirmationToken = req.body.token;
+    const confirmationToken = req.query.token;
 
     await knex.transaction(async trx => {
         const user = await new User({confirmationToken}).fetch({require: false, transacting: trx});
@@ -103,18 +114,16 @@ export const sendPasswordResetRequest = async (req:express.Request, res: express
         return;
     }
 
-    await transporter.sendMail({
-        from: "'Api', <mail@api.com>",
-        to: req.body.email,
-        subject: 'Password reset',
-        text: `To change your password please access http://${process.env.API_URL}:${process.env.SERVER_PORT}/auth/changePassword \nPassword reset token: ${resetPasswordToken}`
-    });
+    const job = queue.createJob({type: 'password_reset', email: req.body.email, token: resetPasswordToken});
+    job.save();
+    await saveJobInDb(job);
 
     res.json('Password reset request sent. Please check your email.');
 };
 
 export const resetPassword = async (req:express.Request, res: express.Response) => {
-    const {resetPasswordToken, password, confirmPassword} = req.body;
+    const {password, confirmPassword} = req.body;
+    const resetPasswordToken = req.query.token;
 
     if(!resetPasswordToken){
         res.json('Error: No password reset token received.');
@@ -160,12 +169,8 @@ export const resendConfirmationEmail = async (req:express.Request, res: express.
         return;
     }
 
-    await transporter.sendMail({
-        from: "'Api', <mail@api.com>",
-        to: req.body.email,
-        subject: 'Confirm your account',
-        text: `Please confirm your new account. Confirmation token: ${confirmationToken}`
-    });
+    const job = queue.createJob({type: 'account_confirmation', email: req.body.email, token: confirmationToken});
+    job.save();
 
     res.json('Confirmation email sent.');
 };
