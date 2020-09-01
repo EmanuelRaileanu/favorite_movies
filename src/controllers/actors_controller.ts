@@ -7,7 +7,6 @@ import { File } from '../entities/files';
 import { Award } from '../entities/awards';
 import { Studies } from '../entities/studies';
 import { Nationality } from '../entities/nationalities';
-import { BaseModel } from '../entities/base_model';
 import * as type from '../utilities/customTypes';
 import { Institution } from '../entities/institutions';
 import { Degree } from '../entities/degrees';
@@ -45,11 +44,6 @@ export const getActorById = async (req: express.Request, res: express.Response) 
 };
 
 export const postActor = async (req: express.Request, res: express.Response) => {
-    if(!req.body.firstName || !req.body.lastName){
-        res.status(400).json('Bad request');
-        return;
-    }
-
     let id: number | undefined;
     await knex.transaction(async trx => {
         let imageId: number | undefined;

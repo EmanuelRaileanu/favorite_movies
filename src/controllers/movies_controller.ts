@@ -1,64 +1,54 @@
-import { knex } from '../utilities/knexconfig';
 import express from 'express';
-import { paginate, getLength } from '../utilities/paginate';
 import { Movie } from '../entities/movies';
+import { knex } from '../utilities/knexconfig';
 import { MovieCategory } from '../entities/movie_categories';
 import { File } from '../entities/files';
 import fs from 'fs';
 import util from 'util';
 import * as type from '../utilities/customTypes';
-import { searchMovieByTitle } from '../utilities/omdbAPIFunctions';
+import * as handler from '../utilities/exceptionHandlers';
 
 const deleteFile = util.promisify(fs.unlink);
 
-export const getMovies = async (req: express.Request, res: express.Response) => {
-    const reg = new RegExp('^[0-9]+');
-    const length = await getLength('movies');
-    const page = parseInt(reg.test(String(req.query.page))? String(req.query.page) : '1', 10) || 1;
-    const pageSize = parseInt(reg.test(String(req.query.pageSize))? String(req.query.pageSize) : '10', 10) || 10;
-
-    const result = await paginate(page, pageSize, length);
-
-    if(result && !result.results.length){
-        res.status(404).json('Page not found');
-        return;
-    }
-
-    res.json(result);
+async function getPagination(req: express.Request){
+    const reg = /^[0-9]+/;
+    const length = parseInt(String(await new Movie().length));
+    const page = parseInt(reg.test(String(req.query.page))? String(req.query.page) : '1') || 1;
+    const pageSize = parseInt(reg.test(String(req.query.pageSize))? String(req.query.pageSize) : '10') || 10;
+    const pageCount = Math.ceil(length / pageSize);
+    return{
+        page,
+        pageSize,
+        pageCount
+    };
 };
 
-export const getMovieCategories = async (req: express.Request, res: express.Response) => {
-    const rows = (await new MovieCategory().fetchAll()).toJSON();
-    res.json(rows);
-};
+const withRelated = ['productionCompany', 'categories', 'poster', 'languages', 'movieScenes', 'movieScenes.movieSet', 'movieScenes.movieSet.address', 
+                'movieScenes.movieSet.address.street', 'actors', 'actors.nationality', 'actors.actorPhoto','actors.awards', 'actors.awards.award', 'actors.studies', 
+                'actors.studies.institution', 'actors.studies.degree', 'productionCrew', 'productionCrew.address',
+                'productionCrew.address.street', 'productionCrew.address.street.location', 'productionCrew.address.street.location.country', 
+                'productionCrew.productionCrewType'];
 
-export const getMovieById = async (req: express.Request, res: express.Response) => {
-    const movie = await new Movie({id:req.params.id}).fetch({
+async function fetchMovies(req: express.Request){
+    const pagination = await getPagination(req);
+    const movies = await new Movie().fetchPage({
         require:false,
-        withRelated: ['productionCompany', 'categories', 'poster', 'languages', 'movieScenes', 'movieScenes.movieSet', 'movieScenes.movieSet.address', 
-        'movieScenes.movieSet.address.street', 'actors', 'actors.nationality', 'actors.actorPhoto','actors.awards', 'actors.awards.award', 'actors.studies', 
-        'actors.studies.institution', 'actors.studies.degree', 'productionCrew', 'productionCrew.address',
-        'productionCrew.address.street', 'productionCrew.address.street.location', 'productionCrew.address.street.location.country', 
-        'productionCrew.productionCrewType']
+        page: pagination.page,
+        pageSize: pagination.pageSize,
+        withRelated
     });
-
-    if(!movie){
-        res.status(404).json('Movie not found');
-        return;
-    }
-
-    res.json(movie);
+    return{
+        movies,
+        pagination
+    };
 };
 
-export const postMovie = async (req: express.Request, res: express.Response) => {
-    let id: number | undefined;
+async function fetchMovieById(id: number){
+    return await new Movie({id}).fetch({require: false, withRelated});
+};
 
-    await knex.transaction(async trx => {
-        if(!req.body.title){
-            res.status(400).json('Bad request');
-            return;
-        }
-
+async function saveMovie(req: express.Request){
+    return await knex.transaction(async trx => {
         let posterId;
         if(req.file){
             const poster = {
@@ -86,7 +76,7 @@ export const postMovie = async (req: express.Request, res: express.Response) => 
             posterId
         };
 
-        id = (await new Movie().save(movie, {transacting: trx, method: 'insert'})).get('id');
+        const id = (await new Movie().save(movie, {transacting: trx, method: 'insert'})).get('id');
         if(req.body.categories !== undefined){
             let categoryIds;
             categoryIds = (req.body.categories.map((category: any) => category.id));
@@ -97,37 +87,15 @@ export const postMovie = async (req: express.Request, res: express.Response) => 
             }
             await new Movie({id}).categories().attach(categoryIds, {transacting:trx});
         }
+        return id;
     });
-
-    const newEntry = await (await new Movie({id}).fetch({
-        require: false,
-        withRelated: ['productionCompany', 'categories', 'poster', 'languages', 'movieScenes', 'movieScenes.movieSet', 'movieScenes.movieSet.address', 
-        'movieScenes.movieSet.address.street', 'actors', 'actors.nationality', 'actors.actorPhoto','actors.awards', 'actors.awards.award', 'actors.studies', 
-        'actors.studies.institution', 'actors.studies.degree', 'productionCrew', 'productionCrew.address',
-        'productionCrew.address.street', 'productionCrew.address.street.location', 'productionCrew.address.street.location.country', 
-        'productionCrew.productionCrewType']
-    })).toJSON();
-
-    res.json(newEntry);
 };
 
-export const updateMovie = async (req: express.Request, res: express.Response) => {
-    if(!await new MovieCategory({id: parseInt(req.params.id, 10)}).fetch({require: false})){
-        res.json(`Canot update movie with id ${req.params.id} because it does not exist in the database`);
-        return;
-    }
-
-    let posterId: number;
-    const finalCategoryIds: number[] = [];
+async function UpdateMovie(req: express.Request){
     await knex.transaction(async trx => {
-        const movie = await new Movie({id: req.params.id}).fetch({
-            require: false,
-            withRelated: ['productionCompany', 'categories', 'poster', 'languages', 'movieScenes', 'movieScenes.movieSet', 'movieScenes.movieSet.address', 
-            'movieScenes.movieSet.address.street', 'actors', 'actors.nationality', 'actors.actorPhoto','actors.awards', 'actors.awards.award', 'actors.studies', 
-            'actors.studies.institution', 'actors.studies.degree', 'productionCrew', 'productionCrew.address',
-            'productionCrew.address.street', 'productionCrew.address.street.location', 'productionCrew.address.street.location.country', 
-            'productionCrew.productionCrewType']
-        });
+        let posterId;
+        const finalCategoryIds: number[] = [];
+        const movie = await fetchMovieById(parseInt(req.params.id));
         if(req.body.categories !== undefined){
             const updatedCategoryIds = req.body.categories.map((category: type.Category) => category.id);
             const oldCategoryIds = await Promise.all(movie.related('categories').toJSON().map((category: type.Category) => category.id));
@@ -151,7 +119,6 @@ export const updateMovie = async (req: express.Request, res: express.Response) =
 
             if(oldPosterPath){
                 await movie.poster().where({id: movie.related('poster').get('id')}).destroy({transacting: trx});
-                // await movie.related('poster').destroy(); // Property 'destroy' does not exist on type 'Model<any> | Collection<Model<any>>'
             }
 
             const poster = {
@@ -166,6 +133,8 @@ export const updateMovie = async (req: express.Request, res: express.Response) =
                 transacting: trx,
                 method: 'insert'
             })).get('id');
+        }else{
+            await movie.save(req.body, {transacting: trx, method: 'update'});
         }
 
         await movie.save({posterId}, {transacting: trx, method: 'update'});
@@ -174,33 +143,11 @@ export const updateMovie = async (req: express.Request, res: express.Response) =
             await deleteFile(oldPosterPath);
         }
     });
-
-    const updatedMovie = (await new Movie({id: req.params.id}).fetch({
-        require: false,
-        withRelated: ['productionCompany', 'categories', 'poster', 'languages', 'movieScenes', 'movieScenes.movieSet', 'movieScenes.movieSet.address', 
-        'movieScenes.movieSet.address.street', 'actors', 'actors.nationality', 'actors.actorPhoto','actors.awards', 'actors.awards.award', 'actors.studies', 
-        'actors.studies.institution', 'actors.studies.degree', 'productionCrew', 'productionCrew.address',
-        'productionCrew.address.street', 'productionCrew.address.street.location', 'productionCrew.address.street.location.country', 
-        'productionCrew.productionCrewType']
-    })).toJSON();
-
-    res.json(updatedMovie);
 };
 
-export const deleteMovie = async (req: express.Request, res: express.Response) => {
-    if(!new Movie({id: parseInt(req.params.id, 10)}).fetch({require: false})){
-        res.status(404).json('Movie not found');
-        return;
-    }
+async function DeleteMovie(req: express.Request){
     await knex.transaction(async trx => {
-        const movie = await new Movie({id: req.params.id}).fetch({
-            require: false,
-            withRelated: ['productionCompany', 'categories', 'poster', 'languages', 'movieScenes', 'movieScenes.movieSet', 'movieScenes.movieSet.address', 
-            'movieScenes.movieSet.address.street', 'actors', 'actors.nationality', 'actors.actorPhoto','actors.awards', 'actors.awards.award', 'actors.studies', 
-            'actors.studies.institution', 'actors.studies.degree', 'productionCrew', 'productionCrew.address',
-            'productionCrew.address.street', 'productionCrew.address.street.location', 'productionCrew.address.street.location.country', 
-            'productionCrew.productionCrewType']
-        });
+        const movie = await fetchMovieById(parseInt(req.params.id));
         const oldCategoryIds = await Promise.all(movie.related('categories').toJSON().map((category: type.Category) => category.id));
         await movie.categories().detach(oldCategoryIds, {transacting: trx});
 
@@ -220,6 +167,40 @@ export const deleteMovie = async (req: express.Request, res: express.Response) =
             await deleteFile(await movie.related('poster').get('relativePath'));
         }
     });
+};
+
+export const getMovies = async (req: express.Request, res: express.Response) => {
+    const result = await fetchMovies(req);
+    res.json(result);
+};
+
+export const getMovieCategories = async (req: express.Request, res: express.Response) => {
+    const movieCategories = await new MovieCategory().fetchAll();
+    res.json(movieCategories);
+};
+
+export const getMovieById = async (req: express.Request, res: express.Response) => {
+    const movie = await fetchMovieById(parseInt(req.params.id));
+    await handler.handleGettingMovieByIdExceptions(movie);
+    res.json(movie);
+};
+
+export const postMovie = async (req: express.Request, res: express.Response) => {
+    const id = await saveMovie(req);
+    const newMovie = await fetchMovieById(id);
+    res.json(newMovie);
+};
+
+export const updateMovie = async (req: express.Request, res: express.Response) => {
+    await handler.handleMovieUpdatingExceptions(req);
+    await UpdateMovie(req);
+    const updatedMovie = await fetchMovieById(parseInt(req.params.id));
+    res.json(updatedMovie);
+};
+
+export const deleteMovie = async (req: express.Request, res: express.Response) => {
+    await handler.handleMovieDeletionExceptions(req);
+    await DeleteMovie(req);
     res.status(204).send();
 };
 
