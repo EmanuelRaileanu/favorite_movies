@@ -15,9 +15,25 @@ import { Movie } from '../entities/movies';
 
 const deleteFile = util.promisify(fs.unlink);
 
+async function getPagination(req: express.Request){
+    const reg = /^[0-9]+/;
+    const length = parseInt(String(await new Actor().length));
+    const page = parseInt(reg.test(String(req.query.page))? String(req.query.page) : '1') || 1;
+    const pageSize = parseInt(reg.test(String(req.query.pageSize))? String(req.query.pageSize) : '10') || 10;
+    const pageCount = Math.ceil(length / pageSize);
+    return{
+        page,
+        pageSize,
+        pageCount
+    };
+};
+
 export const getActors = async (req: express.Request, res: express.Response) => {
-    const actors = await new Actor().fetchAll({
+    const pagination = await getPagination(req);
+    const actors = await new Actor().fetchPage({
         require: false,
+        page: pagination.page,
+        pageSize: pagination.pageSize,
         withRelated: ['nationality', 'awards', 'awards.award', 'studies', 'studies.institution', 'studies.degree', 'movies', 'movies.productionCompany','movies.categories', 'movies.poster', 'actorPhoto']
     });
 
@@ -26,7 +42,10 @@ export const getActors = async (req: express.Request, res: express.Response) => 
         return;
     }
 
-    res.json(actors);
+    res.json({
+        actors,
+        pagination
+    });
 };
 
 export const getActorById = async (req: express.Request, res: express.Response) => {

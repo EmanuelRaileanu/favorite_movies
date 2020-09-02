@@ -8,8 +8,13 @@ import { MovieScene } from './movie_scenes';
 import { BaseModel } from './base_model';
 
 export class Actor extends BaseModel{
+    [x: string]: any;
     get tableName(){
         return 'actors';
+    }
+
+    get length(){
+        return this.count();
     }
 
     // one-to-one relationship with File
