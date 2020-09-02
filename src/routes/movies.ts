@@ -6,9 +6,9 @@ import { validateMovieCreation, validateMovieUpdate } from '../validators/movieV
 
 export const register = (router: express.Router) => {
     router.get('/movies', asyncMiddleware(controller.getMovies));
-    router.post('/movies', upload.single('moviePoster'), asyncMiddleware(validateMovieCreation), asyncMiddleware(controller.postMovie));
+    router.post('/movies', upload.single('moviePoster'), validateMovieCreation, asyncMiddleware(controller.postMovie));
     router.get('/movies/movie-categories', asyncMiddleware(controller.getMovieCategories));
     router.get('/movies/:id', asyncMiddleware(controller.getMovieById));
-    router.put('/movies/:id', upload.single('moviePoster'), asyncMiddleware(validateMovieUpdate), asyncMiddleware(controller.updateMovie));
+    router.put('/movies/:id', upload.single('moviePoster'), validateMovieUpdate, asyncMiddleware(controller.updateMovie));
     router.delete('/movies/:id', asyncMiddleware(controller.deleteMovie));
 };

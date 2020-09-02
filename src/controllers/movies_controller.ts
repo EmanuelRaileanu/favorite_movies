@@ -181,7 +181,9 @@ export const getMovieCategories = async (req: express.Request, res: express.Resp
 
 export const getMovieById = async (req: express.Request, res: express.Response) => {
     const movie = await fetchMovieById(parseInt(req.params.id));
-    await handler.handleGettingMovieByIdExceptions(movie);
+    if(!movie){
+        throw 'Movie not found.';
+    }
     res.json(movie);
 };
 

@@ -25,7 +25,7 @@ export const getProductionCompanyById = async (req: express.Request, res: expres
         q.groupBy('production_companies.id');
         q.select('production_companies.*');
         q.count('movies.ProductionCompanyId as totalMoviesMade');
-    }).fetch();
+    }).fetch({require: false});
 
     if(!productionCompany){
         res.status(404).json('Production company not found');
@@ -37,7 +37,7 @@ export const getProductionCompanyById = async (req: express.Request, res: expres
 
 export const postProductionCompany = async (req: express.Request, res: express.Response) => {
     if(!req.body.name){
-        res.status(400).json('Bad request');
+        res.status(400).json('Name is required');
         return;
     }
 
@@ -45,11 +45,20 @@ export const postProductionCompany = async (req: express.Request, res: express.R
         name: req.body.name
     };
 
-    const id = await new ProductionCompany().save(productionCompany, {method: 'insert'});
+    const id =(await new ProductionCompany().save(productionCompany, {method: 'insert'})).get('id');
 
-    const result = await new ProductionCompany({id}).fetch();
-
+    const result = await new ProductionCompany({id}).fetch({require: false});
     res.json(result);
+};
+
+export const updateProductionCompany = async (req: express.Request, res: express.Response) => {
+    if(!req.body.name){
+        res.status(400).json('At least one filed is required');
+        return;
+    }
+    const id =(await new ProductionCompany().where({id: req.params.id}).save({name: req.body.name}, {method: 'update'})).get('id');
+    const updatedProductionCompany = await new ProductionCompany({id}).fetch({require: false});
+    res.json(updatedProductionCompany);
 };
 
 export const deleteProductionCompany = async (req: express.Request, res: express.Response) => {

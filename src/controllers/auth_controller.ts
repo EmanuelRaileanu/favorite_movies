@@ -47,7 +47,7 @@ export const register = async (req: express.Request, res: express.Response) => {
     job.save();
     await saveJobInDb(job);
 
-    res.json('Registered successfully!');
+    res.json('Registered successfully! Please check your email to confirm your account.');
 };
 
 export const login = async (req: express.Request, res: express.Response) => {
@@ -121,7 +121,7 @@ export const sendPasswordResetRequest = async (req:express.Request, res: express
     res.json('Password reset request sent. Please check your email.');
 };
 
-export const resetPassword = async (req:express.Request, res: express.Response) => {
+export const changePassword = async (req:express.Request, res: express.Response) => {
     const {password, confirmPassword} = req.body;
     const resetPasswordToken = req.query.token;
 

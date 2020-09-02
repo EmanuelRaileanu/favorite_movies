@@ -7,7 +7,7 @@ import { validateActorCreation, validateActorUpdate } from '../validators/actorV
 export const register = (router: express.Router) => {
     router.get('/actors', asyncMiddleware(controller.getActors));
     router.get('/actors/:id', asyncMiddleware(controller.getActorById));
-    router.post('/actors', upload.single('actorPhoto'), asyncMiddleware(validateActorCreation), asyncMiddleware(controller.postActor));
+    router.post('/actors', upload.single('actorPhoto'), validateActorCreation, asyncMiddleware(controller.postActor));
     router.delete('/actors/:id', asyncMiddleware(controller.deleteActor));
-    router.put('/actors/:id',  upload.single('actorPhoto'), asyncMiddleware(validateActorCreation), asyncMiddleware(controller.updateActor));
+    router.put('/actors/:id',  upload.single('actorPhoto'), validateActorUpdate, asyncMiddleware(controller.updateActor));
 };

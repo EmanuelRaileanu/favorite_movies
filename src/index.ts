@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-import express, { Router } from 'express';
+import express from 'express';
 import * as root from './routes/root';
 import * as movies from './routes/movies';
 import * as err from './routes/err';
@@ -11,6 +11,8 @@ import passport from 'passport';
 import * as authentication from './utilities/authMiddleware';
 import fs from 'fs';
 import util from 'util';
+import swaggerUi from 'swagger-ui-express';
+import swaggerDoc from '../swagger.json';
 
 const deleteFile = util.promisify(fs.unlink);
 
@@ -22,6 +24,7 @@ const port = process.env.SERVER_PORT;
 app.use(express.json());
 app.use(passport.initialize());
 app.use('/public', express.static('public'));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDoc));
 
 authentication.configurePassport();
 
@@ -39,11 +42,14 @@ auth.register(loginRouter);
 
 err.register(app);
 
-app.use(async (err: any, req: any, res: any, next: any) => {
+app.use(async (err: any, req: express.Request, res: express.Response, next: any) => {
+    if(!err){
+        res.status(200).end();
+    }
     if(req.file){
         await deleteFile(req.file.path);
     }
-    res.json(err.toString()); 
+    res.json(err); 
 });
 
 app.listen(port, () => {

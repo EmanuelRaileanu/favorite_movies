@@ -1,14 +1,6 @@
 import express from 'express';
-import * as type from './customTypes';
-import Joi from 'joi';
 import { MovieCategory } from '../entities/movie_categories';
 import { Movie } from '../entities/movies';
-
-export async function handleGettingMovieByIdExceptions(movie: type.Movie){
-    if(!movie){
-        throw 'Movie not found.';
-    }
-};
 
 export async function handleMovieUpdatingExceptions(req: express.Request){
     if(!await new MovieCategory({id: parseInt(req.params.id, 10)}).checkIfExists()){

@@ -10,9 +10,9 @@ const schemas = {
         budget: Joi.number(),
         gross: Joi.number(),
         overallRating: Joi.number().required().error(() => {throw 'Rating is required.'}),
-        releaseDate: Joi.date().required(),
+        releaseDate: Joi.date().required().error(() => {throw 'Release date is required.'}),
         ProductionCompanyId: Joi.number().min(1).required().error(() => {throw 'Production company is required.'}),
-        categories: Joi.array().items(Joi.object({id: Joi.number(), name: Joi.string()})).required().error(() => {throw 'Categories are required.'})
+        categories: Joi.array().items(Joi.object({id: Joi.number(), name: Joi.string()}))
     }),
     updateMovie: Joi.object().keys({
         title: Joi.string().min(3).max(40),
