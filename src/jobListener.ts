@@ -20,5 +20,5 @@ queue.process(async (job: any, done: any) => {
             text: `To change your password please access http://${process.env.API_URL}:${process.env.SERVER_PORT}/auth/change-password/?token=${job.data.token}`
         });
     }
-    return done(null, job.data)
+    return done(null, job.data);
 });
